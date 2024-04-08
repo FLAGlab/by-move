@@ -2,7 +2,7 @@ import ByMove
 
 defmove Sender do
 
-
+  require ByMove
   def adder(a,b) do
     a+b
   end
@@ -11,8 +11,8 @@ defmove Sender do
     a*b
   end
 
-  def send_move(dest) do
-    ByMove.send_by_move(dest, {:adder, 2})
+  def send_move(dest, {func_name, func_arity}) do
+    ByMove.send_by_move(dest, {func_name, func_arity})
   end
 
   def getDirectory() do
@@ -23,7 +23,4 @@ defmove Sender do
     @ast
   end
 
-  # def delete_adder() do
-  #   Module.delete_definition(Sender, {:adder, 2})
-  # end
 end

@@ -13,16 +13,16 @@ defmodule ByMove do
     end
   end
 
-  defmacro send_by_move(dest, {func_name, func_arity}) do
-    quote do
-      send_by_move(unquote(dest), {unquote(func_name), unquote(func_arity)}, @ast)
-    end
-  end
-
   def send_by_move(dest, {func_name, func_arity}, ast) do
     func_def = get_func_def(ast, {func_name, func_arity})
     delete_func_load(ast, {func_name,func_arity})
     send(dest, {:ok, func_def})
+  end
+
+  defmacro send_by_move(dest, {func_name, func_arity}) do
+    quote do
+      ByMove.send_by_move(unquote(dest), {unquote(func_name), unquote(func_arity)}, @ast)
+    end
   end
 
   defmacro recieve_by_move(do: ast) do

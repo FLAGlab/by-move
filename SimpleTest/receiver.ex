@@ -6,10 +6,8 @@ defmove Receiver do
     receive do
       {_, func} ->
         ByMove.insert_func_load(@ast, func)
-      x ->
-        IO.puts(x)
       _ ->
-        IO.puts("idk")
+        IO.puts("Invalid message")
     end
   end
 
