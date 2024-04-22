@@ -112,4 +112,47 @@ defmodule ByMove do
 
   defp pattern_match_function({:def, _, [{func_name1, _, _} | _]}, {func_name2, arity}) when func_name1 == func_name2, do: true
   defp pattern_match_function(_, _), do: false
+
+
+  defmacro have_func?({func_name, arity}) do
+    quote do
+      ByMove.have_func?(@ast, {unquote(func_name), unquote(arity)})
+    end
+  end
+
+  def have_func?(ast, {func_name, arity}) do
+    result = Macro.path(ast, &(pattern_match_function(&1, {func_name,arity})))
+    if result == [] do
+      false
+    else
+      true
+    end
+  end
+
+  def i_need_func({func_name, arity}, destinations, origin) do
+    Enum.each(destinations, fn dest -> send(dest, {:need_func, {func_name, arity}, origin}) end)
+  end
+
+
+  defmacro wait_for_func(func) do
+    quote do
+      ByMove.wait_for_func(@ast, unquote(func))
+    end
+  end
+  def wait_for_func(ast, {func_name, arity}) do
+    receive do
+      {:func_def, func_def} -> ByMove.insert_func_load(ast, func_def)
+      {:need_func, {func_name, arity}, origin} ->
+        if ByMove.have_func?(ast, {func_name, arity}) do
+          ByMove.send_by_move(origin, {func_name, arity}, ast)
+        else
+          nil
+        end
+        wait_for_func(ast, {func_name, arity})
+      _ -> wait_for_func(ast, {func_name, arity})
+    end
+  end
+
+
+
 end
