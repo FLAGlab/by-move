@@ -15,8 +15,11 @@ defmodule ByMove do
 
   def send_by_move(dest, {func_name, func_arity}, ast) do
     func_def = get_func_def(ast, {func_name, func_arity})
-    delete_func_load(ast, {func_name,func_arity})
-    send(dest, {:ok, func_def})
+    IO.puts("Sending func:")
+    IO.inspect func_def
+    new_ast = delete_func_load(ast, {func_name,func_arity})
+    send(dest, {:func_def, func_def})
+    new_ast
   end
 
   defmacro send_by_move(dest, {func_name, func_arity}) do
@@ -43,15 +46,21 @@ defmodule ByMove do
 
   def insert_func_load(ast, func) do
     #get file, insert function into module ast, reload module.
+    IO.puts "Inserting func:"
+    IO.inspect func
     new_ast = insert_func(ast, func)
-    insert_att(new_ast, insert_ast(new_ast))
-    |> Code.compile_quoted
+    ast_updated = insert_ast(new_ast, insert_ast(new_ast))
+    IO.puts "To be compiled:"
+    IO.inspect ast_updated
+    Code.compile_quoted(ast_updated, "./error.txt")
+    ast_updated
   end
 
   def delete_func_load(ast, func) do
     new_ast = delete_func(ast, func)
-    insert_att(new_ast, insert_ast(new_ast))
-    |> Code.compile_quoted
+    ast_updated = insert_ast(new_ast, insert_ast(new_ast))
+    Code.compile_quoted(ast_updated)
+    ast_updated
   end
 
   def get_func_def_from_file(file_path, func) do
@@ -75,18 +84,18 @@ defmodule ByMove do
     end
   end
 
-  def insert_att([do: {:__block__, meta, args}], att) when is_list(args) do
+  def insert_ast([do: {:__block__, meta, args}], att) when is_list(args) do
     #TODO case where module defines only 1 function
     [do: {:__block__, meta, [att] ++ args}]
   end
-  def insert_att({name, meta, args}, att) do
-    {name, meta, insert_att(args, att)}
+  def insert_ast({name, meta, args}, att) do
+    {name, meta, insert_ast(args, att)}
   end
-  def insert_att([x|xs], att) do
+  def insert_ast([x|xs], att) do
     if is_tuple(x) do
-      [x]++insert_att(xs, att)
+      [x]++insert_ast(xs, att)
     else
-      [insert_att(x,att)]
+      [insert_ast(x,att)]
     end
   end
 
@@ -122,7 +131,7 @@ defmodule ByMove do
 
   def have_func?(ast, {func_name, arity}) do
     result = Macro.path(ast, &(pattern_match_function(&1, {func_name,arity})))
-    if result == [] do
+    if is_nil(result) do
       false
     else
       true
@@ -134,25 +143,44 @@ defmodule ByMove do
   end
 
 
-  defmacro wait_for_func(func) do
+  defmacro wait_for_func(func, protected \\ []) do
     quote do
-      ByMove.wait_for_func(@ast, unquote(func))
+      ByMove.wait_for_func(@ast, unquote(func), unquote(protected))
     end
   end
-  def wait_for_func(ast, {func_name, arity}) do
+  def wait_for_func(ast, {func_name, arity}, protected) do
+    IO.puts "waiting........."
     receive do
-      {:func_def, func_def} -> ByMove.insert_func_load(ast, func_def)
+      {:func_def, func_def} ->  IO.puts "Received func def:"
+                                IO.inspect func_def
+                                ByMove.insert_func_load(ast, func_def)
       {:need_func, {func_name, arity}, origin} ->
-        if ByMove.have_func?(ast, {func_name, arity}) do
+        new_ast = if !({func_name, arity} in protected)  && ByMove.have_func?(ast, {func_name, arity}) do
           ByMove.send_by_move(origin, {func_name, arity}, ast)
         else
-          nil
+          ast
         end
-        wait_for_func(ast, {func_name, arity})
-      _ -> wait_for_func(ast, {func_name, arity})
+        wait_for_func(new_ast, {func_name, arity}, protected)
+      _ -> wait_for_func(ast, {func_name, arity}, protected)
     end
   end
 
+  defmacro release_functions() do
+    quote do
+      ByMove.release_functions(@ast)
+    end
+  end
 
-
+  def release_functions(ast) do
+    receive do
+      {:need_func, {func_name, arity}, origin} ->
+        new_ast = if ByMove.have_func?(ast, {func_name, arity}) do
+          ByMove.send_by_move(origin, {func_name, arity}, ast)
+        else
+          ast
+        end
+        release_functions(new_ast)
+      _ -> release_functions(ast)
+    end
+  end
 end

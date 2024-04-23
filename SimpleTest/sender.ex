@@ -19,6 +19,10 @@ defmove Sender do
     __ENV__.file()
   end
 
+  def has_func_test() do
+    ByMove.have_func?({:weird_func, 2})
+  end
+
   def getAst() do
     @ast
   end
