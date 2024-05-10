@@ -1,14 +1,23 @@
 defmodule ByMove do
   defmacro defmove(name, do: block) do
+    get_ast_function_ast = quote do
+      def get_ast do
+        @ast
+      end
+    end
     module_ast = quote do
       defmodule unquote(name) do
         unquote(block)
       end
     end
+    module_ast = insert_func(module_ast, get_ast_function_ast)
     quote do
       defmodule unquote(name) do
         @ast unquote(Macro.escape(module_ast))
         unquote(block)
+        def get_ast do
+          @ast
+        end
       end
     end
   end
@@ -17,6 +26,8 @@ defmodule ByMove do
     func_def = get_func_def(ast, {func_name, func_arity})
     IO.puts("Sending func:")
     IO.inspect func_def
+    IO.puts "AST:------------------------------------------"
+    IO.inspect ast
     new_ast = delete_func_load(ast, {func_name,func_arity})
     send(dest, {:func_def, func_def})
     new_ast
@@ -106,6 +117,8 @@ defmodule ByMove do
     [do: {name, meta, delete_func(args, func)}]
   end
   def delete_func([x|xs], {func_name, parity}) do
+    IO.puts "Deleting func: ------------------------------"
+    IO.inspect x
     if pattern_match_function(x, {func_name, parity}) do
       xs
     else
@@ -182,5 +195,34 @@ defmodule ByMove do
         release_functions(new_ast)
       _ -> release_functions(ast)
     end
+  end
+
+  def module_release_functions(module) do
+    get_ast = Function.capture(module, :get_ast, 0)
+    ast = get_ast.()
+    release_functions(ast)
+  end
+
+  def has_func?(module, {func_name, arity}) do
+    get_ast = Function.capture(module, :get_ast, 0)
+    ast = get_ast.()
+    result = Macro.path(ast, &(pattern_match_function(&1, {func_name,arity})))
+    if is_nil(result) do
+      false
+    else
+      true
+    end
+  end
+
+  def module_wait_for_func(module, {func_name, arity}, protected \\ []) do
+    get_ast = Function.capture(module, :get_ast, 0)
+    ast = get_ast.()
+    wait_for_func(ast, {func_name, arity}, protected)
+  end
+
+  def release_functions(module) do
+    get_ast = Function.capture(module, :get_ast, 0)
+    ast = get_ast.()
+    release_functions(ast)
   end
 end

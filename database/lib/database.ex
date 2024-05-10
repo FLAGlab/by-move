@@ -6,6 +6,18 @@ defmodule Database do
   #   "bank_accounts" => %{1 => %{balance: 1000}, 2 => %{balance: 2000}}
   # }
 
+  def setup do
+    Toolshed.cmd("epmd -daemon")
+    Node.start(:"database@192.168.0.16")
+    Node.set_cookie(:mycookie)
+    {_,pid} = GenServer.start_link(__MODULE__, default_bank_state(), name: Database)
+    :global.register_name :database, pid
+  end
+
+  def start_test do
+    :global.register_name(:ready, :ok)
+  end
+
   def default_bank_state() do
     %{
       "users" => %{
