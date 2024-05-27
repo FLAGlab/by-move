@@ -8,15 +8,40 @@ defmodule Database do
 
   def setup do
     Toolshed.cmd("epmd -daemon")
-    Node.start(:"database@192.168.0.16")
+    Node.start(:"database@192.168.0.9")
     Node.set_cookie(:mycookie)
     {_,pid} = GenServer.start_link(__MODULE__, default_bank_state(), name: Database)
     :global.register_name :database, pid
   end
 
-  def start_test do
-    :global.register_name(:ready, :ok)
+  def check_state do
+    pid = :global.whereis_name(:database)
+    balance = GenServer.call(pid, {:get_balance, "Alice"})
+    IO.puts "Alice's balance: #{balance}"
+    balance = GenServer.call(pid, {:get_balance, "Bob"})
+    IO.puts "Bob's balance: #{balance}"
   end
+
+  def start_test do
+    start_time = System.monotonic_time(:millisecond)
+    :global.register_name(:ready, self())
+    wait_till_finish()
+    end_time = System.monotonic_time(:millisecond)
+    IO.puts("Time taken: #{end_time - start_time}ms")
+  end
+
+  def wait_till_finish do
+    if :global.whereis_name(:node1_done) == :undefined do
+      wait_till_finish()
+    end
+    if :global.whereis_name(:node2_done) == :undefined do
+      wait_till_finish()
+    end
+    if :global.whereis_name(:node3_done) == :undefined do
+      wait_till_finish()
+    end
+  end
+
 
   def default_bank_state() do
     %{

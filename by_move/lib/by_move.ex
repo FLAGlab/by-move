@@ -25,9 +25,9 @@ defmodule ByMove do
   def send_by_move(dest, {func_name, func_arity}, ast) do
     func_def = get_func_def(ast, {func_name, func_arity})
     IO.puts("Sending func:")
-    IO.inspect func_def
+    # IO.inspect func_def
     IO.puts "AST:------------------------------------------"
-    IO.inspect ast
+    # IO.inspect ast
     new_ast = delete_func_load(ast, {func_name,func_arity})
     send(dest, {:func_def, func_def})
     new_ast
@@ -58,11 +58,11 @@ defmodule ByMove do
   def insert_func_load(ast, func) do
     #get file, insert function into module ast, reload module.
     IO.puts "Inserting func:"
-    IO.inspect func
+    # IO.inspect func
     new_ast = insert_func(ast, func)
     ast_updated = insert_ast(new_ast, insert_ast(new_ast))
     IO.puts "To be compiled:"
-    IO.inspect ast_updated
+    # IO.inspect ast_updated
     Code.compile_quoted(ast_updated, "./error.txt")
     ast_updated
   end
@@ -118,7 +118,7 @@ defmodule ByMove do
   end
   def delete_func([x|xs], {func_name, parity}) do
     IO.puts "Deleting func: ------------------------------"
-    IO.inspect x
+    # IO.inspect x
     if pattern_match_function(x, {func_name, parity}) do
       xs
     else
@@ -156,16 +156,16 @@ defmodule ByMove do
   end
 
 
-  defmacro wait_for_func(func, protected \\ []) do
+  defmacro wait_for_func(func, destinations, self, protected \\ []) do
     quote do
-      ByMove.wait_for_func(@ast, unquote(func), unquote(protected))
+      ByMove.wait_for_func(@ast, unquote(func), unquote(destinations), unquote(self), unquote(protected))
     end
   end
-  def wait_for_func(ast, {func_name, arity}, protected) do
+  def wait_for_func(ast, {func_name, arity}, destinations, self, protected) do
     IO.puts "waiting........."
     receive do
       {:func_def, func_def} ->  IO.puts "Received func def:"
-                                IO.inspect func_def
+                                # IO.inspect func_def
                                 ByMove.insert_func_load(ast, func_def)
       {:need_func, {func_name, arity}, origin} ->
         new_ast = if !({func_name, arity} in protected)  && ByMove.have_func?(ast, {func_name, arity}) do
@@ -173,8 +173,9 @@ defmodule ByMove do
         else
           ast
         end
-        wait_for_func(new_ast, {func_name, arity}, protected)
-      _ -> wait_for_func(ast, {func_name, arity}, protected)
+        # i_need_func({func_name, arity}, destinations, self)
+        wait_for_func(new_ast, {func_name, arity}, destinations, self, protected)
+      _ -> wait_for_func(ast, {func_name, arity},destinations, self, protected)
     end
   end
 
@@ -214,15 +215,10 @@ defmodule ByMove do
     end
   end
 
-  def module_wait_for_func(module, {func_name, arity}, protected \\ []) do
+  def module_wait_for_func(module, {func_name, arity}, destinations, origin, protected \\ []) do
     get_ast = Function.capture(module, :get_ast, 0)
     ast = get_ast.()
-    wait_for_func(ast, {func_name, arity}, protected)
+    wait_for_func(ast, {func_name, arity}, destinations, origin, protected)
   end
 
-  def release_functions(module) do
-    get_ast = Function.capture(module, :get_ast, 0)
-    ast = get_ast.()
-    release_functions(ast)
-  end
 end
