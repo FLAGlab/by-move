@@ -84,6 +84,7 @@ end
 
 defmove Users do
   def setup(test) do
+    Toolshed.cmd("epmd -daemon")
     Node.start(:"node2@192.168.0.11")
     Node.set_cookie(:mycookie)
     Node.connect(:"database@192.168.0.9")

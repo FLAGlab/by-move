@@ -105,6 +105,7 @@ end
 defmove Authentication do
 
   def setup(test) do
+    Toolshed.cmd("epmd -daemon")
     Node.start(:"node1@192.168.0.13")
     Node.set_cookie(:mycookie)
     Node.connect(:"database@192.168.0.9")

@@ -7,6 +7,7 @@ defmodule Database do
   # }
 
   def setup do
+    Toolshed.cmd("epmd -daemon")
     Node.start(:"database@192.168.0.9")
     Node.set_cookie(:mycookie)
     {_,pid} = GenServer.start_link(__MODULE__, default_bank_state(), name: Database)
