@@ -7,7 +7,7 @@ defmodule Database do
   # }
 
   def setup do
-    Node.start(:"database@192.168.0.9")
+    Node.start(:"database@192.168.0.13")
     Node.set_cookie(:mycookie)
     {_,pid} = GenServer.start_link(__MODULE__, default_bank_state(), name: Database)
     :global.register_name :database, pid

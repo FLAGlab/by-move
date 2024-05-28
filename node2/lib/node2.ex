@@ -84,9 +84,9 @@ end
 
 defmove Users do
   def setup(test) do
-    Node.start(:"node2@192.168.0.11")
+    Node.start(:"node2@192.168.0.10")
     Node.set_cookie(:mycookie)
-    Node.connect(:"database@192.168.0.9")
+    Node.connect(:"database@192.168.0.13")
     if test==:bymove do
       :global.register_name :node2, self()
     else

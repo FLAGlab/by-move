@@ -105,9 +105,9 @@ end
 defmove Authentication do
 
   def setup(test) do
-    Node.start(:"node1@192.168.0.13")
+    Node.start(:"node1@192.168.0.9")
     Node.set_cookie(:mycookie)
-    Node.connect(:"database@192.168.0.9")
+    Node.connect(:"database@192.168.0.13")
     if test==:bymove do
       :global.register_name :node1, self()
     else

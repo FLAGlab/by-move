@@ -124,7 +124,7 @@ defmove Transaction do
   def setup(test) do
     Node.start(:"node3@192.168.0.14")
     Node.set_cookie(:mycookie)
-    Node.connect(:"database@192.168.0.9")
+    Node.connect(:"database@192.168.0.13")
     if test==:bymove do
       :global.register_name :node3, self()
     else
