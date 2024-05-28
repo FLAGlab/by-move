@@ -24,7 +24,7 @@ defmodule Database do
   def start_test do
     start_time = System.monotonic_time(:millisecond)
     :global.register_name(:ready, self())
-    wait_till_finish()
+    wait_till_finish({false, false, false})
     end_time = System.monotonic_time(:millisecond)
     IO.puts("Time taken: #{end_time - start_time}ms")
   end
