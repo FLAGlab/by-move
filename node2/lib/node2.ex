@@ -26,7 +26,7 @@ defmodule Node2 do
     deposit = Function.capture(Users, :deposit, 3)
     new_balance = deposit.(db_server, "Bob", 100)
     IO.puts("New balance: #{new_balance}")
-    mark_done(db_server)
+    mark_done()
     finish()
   end
 
@@ -62,7 +62,7 @@ defmodule Node2 do
       new_balance -> new_balance
     end
     IO.puts("New balance: #{new_balance}")
-    mark_done(db_server)
+    mark_done()
   end
 
   def wait_till_start do
