@@ -93,7 +93,8 @@ defmodule UserServer do
   end
   @impl true
   def handle_call({:get_balance, user}, _from, state) do
-    balance = Users.get_balance(state, user)
+    pid = :global.whereis_name(:database)
+    balance = Users.get_balance(pid, user)
     {:reply, balance, state}
   end
 end

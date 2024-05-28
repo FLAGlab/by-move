@@ -130,13 +130,15 @@ defmodule TransactionServer do
   end
   @impl true
   def handle_call({:withdraw, user, amount}, _from, state) do
-    new_balance = Transaction.withdraw(state, user, amount)
+    pid = :global.whereis_name(:database)
+    new_balance = Transaction.withdraw(pid, user, amount)
     {:reply, new_balance, state}
   end
 
   @impl true
   def handle_call({:deposit, user, amount}, _from, state) do
-    new_balance = Transaction.deposit(state, user, amount)
+    pid = :global.whereis_name(:database)
+    new_balance = Transaction.deposit(pid, user, amount)
     {:reply, new_balance, state}
   end
 end

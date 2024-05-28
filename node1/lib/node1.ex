@@ -110,8 +110,8 @@ defmodule AuthServer do
   @impl true
   def handle_call({:authenticate, user, password}, _from, state) do
     IO.puts "Authenticating"
-    IO.inspect(state)
-    result = Authentication.authenticate(state, user, password)
+    pid = :global.whereis_name(:database)
+    result = Authentication.authenticate(pid, user, password)
     {:reply, result, state}
   end
 end
