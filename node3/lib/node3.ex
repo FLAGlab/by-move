@@ -83,20 +83,14 @@ defmodule Node3 do
     # authenticate, get_balance, withdraw, deposit
 
     IO.puts "sending authenticate"
-    send(authentication_pid, {:authenticate, db_server, "Alice", "password123", self()})
-    authentication_result = receive do
-      authentication_result -> authentication_result
-    end
+    authenticated? = GenServer.call(authentication_pid, {:authenticate, db_server, "Alice", "password123"})
     IO.puts "received authenticate"
 
     if !authentication_result do
       IO.puts("Authentication failed")
     end
 
-    send(get_balance_pid, {:get_balance, db_server, "Alice", self()})
-    balance = receive do
-      balance -> balance
-    end
+    balance = GenServer.call(get_balance_pid, {:get_balance, db_server, "Alice"})
 
     if balance < 50 do
       IO.puts("Insufficient funds")
@@ -126,6 +120,23 @@ defmodule Node3 do
   end
 end
 
+
+defmodule TransactionServer do
+  use GenServer
+
+  @impl true
+  def handle_call({:withdraw, user, amount}, _from, state) do
+    new_balance = Transaction.withdraw(state, user, amount)
+    {:reply, new_balance, state}
+  end
+
+  @impl true
+  def handle_call({:deposit, user, amount}, _from, state) do
+    new_balance = Transaction.deposit(state, user, amount)
+    {:reply, new_balance, state}
+  end
+end
+
 defmove Transaction do
 
   def setup(test) do
@@ -135,7 +146,7 @@ defmove Transaction do
     if test==:bymove do
       :global.register_name :node3, self()
     else
-      :global.register_name :node3, spawn(fn -> Node3.server() end)
+      :global.register_name :node3, GenServer.start_link(__MODULE__, :global.whereis_name(:database), name: TransactionServer)
     end
   end
 

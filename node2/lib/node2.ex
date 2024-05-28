@@ -55,21 +55,14 @@ defmodule Node2 do
     transaction_pid = nodes |> Enum.at(1)
 
     IO.puts "sending authenticate"
-    send(auth_pid, {:authenticate, "Bob", "penguin1", self()})
-    authenticated? = receive do
-      authenticated? -> authenticated?
-    end
+    authenticated? = GenServer.call(auth_pid, {:authenticate, "Bob", "penguin1"})
     IO.puts "received authenticate"
 
     if !authenticated? do
       IO.puts("Authentication failed")
     end
 
-    send(transaction_pid, {:deposit, "Bob", 100, self()})
-
-    new_balance = receive do
-      new_balance -> new_balance
-    end
+    new_balance = GenServer.call(transaction_pid, {:deposit, "Bob", 100})
     IO.puts("New balance: #{new_balance}")
     mark_done()
   end
@@ -89,7 +82,16 @@ defmodule Node2 do
     pid = :global.whereis_name(:ready)
     send(pid, :node2_done)
   end
+end
 
+defmodule UserServer do
+  use GenServer
+
+  @impl true
+  def handle_call({:get_balance, user}, _from, state) do
+    balance = Users.get_balance(state, user)
+    {:reply, balance, state}
+  end
 end
 
 defmove Users do
@@ -100,7 +102,7 @@ defmove Users do
     if test==:bymove do
       :global.register_name :node2, self()
     else
-      :global.register_name :node2, spawn(fn -> Node2.server() end)
+      :global.register_name :node2, GenServer.start_link(__MODULE__, :global.whereis_name(:database), name: UserServer)
     end
   end
 

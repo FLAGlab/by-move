@@ -65,10 +65,7 @@ defmodule Node1 do
     end
 
     IO.puts "Getting balance"
-    send(users_pid, {:get_balance, "Alice", self()})
-    balance = receive do
-      balance -> balance
-    end
+    balance = GenServer.call(users_pid, {:get_balance, "Alice"})
     IO.puts "Balance: #{balance}"
 
     if balance < 50 do
@@ -76,10 +73,7 @@ defmodule Node1 do
     end
 
 
-    send(transaction_pid, {:withdraw, "Alice", 50, self()})
-    new_balance = receive do
-      new_balance -> new_balance
-    end
+    new_balance = GenServer.call(transaction_pid, {:withdraw, "Alice", 50})
 
     IO.puts("New balance: #{new_balance}")
     mark_done()
@@ -105,6 +99,16 @@ defmodule Node1 do
 
 end
 
+defmodule AuthServer do
+  use GenServer
+
+  @impl true
+  def handle_call({:authenticate, user, password}, _from, state) do
+    result = Authentication.authenticate(state, user, password)
+    {:reply, result, state}
+  end
+end
+
 
 defmove Authentication do
 
@@ -115,7 +119,7 @@ defmove Authentication do
     if test==:bymove do
       :global.register_name :node1, self()
     else
-      :global.register_name :node1, spawn(fn -> Node1.server() end)
+      :global.register_name :node1, GenServer.start_link(__MODULE__, :global.whereis_name(:database), name: AuthServer)
     end
   end
 
