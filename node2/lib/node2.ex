@@ -39,10 +39,10 @@ defmodule Node2 do
   def server do
     db_server = :global.whereis_name(:database)
     receive do
-      {get_balance, user, from_pid} ->
+      {:get_balance, user, from_pid} ->
         balance = Users.get_balance(db_server, user)
         send(from_pid, balance)
-      _ -> IO.puts("Unknown message")
+      x -> IO.puts("Unknown message: #{inspect(x)}")
     end
     server()
   end

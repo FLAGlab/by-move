@@ -47,8 +47,7 @@ defmodule Node1 do
       {:authenticate, user, password, from_pid} ->
         authenticated? = Authentication.authenticate(db_server, user, password)
         send(from_pid, authenticated?)
-      _ ->
-        IO.puts("Unknown message")
+      x -> IO.puts("Unknown message: #{inspect(x)}")
     end
     server()
   end

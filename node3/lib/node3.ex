@@ -68,12 +68,12 @@ defmodule Node3 do
       {:deposit, user, amount, from_pid} ->
         new_balance = Transaction.deposit(db_server, user, amount)
         send(from_pid, new_balance)
-      _ -> IO.puts("Unknown message")
+      x -> IO.puts("Unknown message #{inspect(x)}")
     end
     server()
   end
 
-  def mainStandard(nodes, db_server) do
+  def main_standard(nodes, db_server) do
     wait_till_start()
 
     authentication_pid = nodes |> Enum.at(0)
