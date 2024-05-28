@@ -124,7 +124,8 @@ defmove Authentication do
     if test==:bymove do
       :global.register_name :node1, self()
     else
-      :global.register_name :node1, GenServer.start_link(__MODULE__, :global.whereis_name(:database), name: AuthServer)
+      {:ok, pid} = GenServer.start_link(AuthServer, :global.whereis_name(:database))
+      :global.register_name :node1, pid
     end
   end
 

@@ -150,7 +150,8 @@ defmove Transaction do
     if test==:bymove do
       :global.register_name :node3, self()
     else
-      :global.register_name :node3, GenServer.start_link(__MODULE__, :global.whereis_name(:database), name: TransactionServer)
+      {:ok, pid} = GenServer.start_link(TransactionServer, :global.whereis_name(:database))
+      :global.register_name :node3, pid
     end
   end
 

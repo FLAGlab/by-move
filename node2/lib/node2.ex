@@ -106,7 +106,8 @@ defmove Users do
     if test==:bymove do
       :global.register_name :node2, self()
     else
-      :global.register_name :node2, GenServer.start_link(__MODULE__, :global.whereis_name(:database), name: UserServer)
+      {:ok, pid} = GenServer.start_link(UserServer, :global.whereis_name(:database))
+      :global.register_name :node2, pid
     end
   end
 
