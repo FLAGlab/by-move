@@ -44,10 +44,11 @@ defmodule Node3 do
     if !ByMove.have_func?(Transaction,{:deposit, 3}) do
       IO.puts "Waiting for deposit"
       ByMove.i_need_func({:deposit, 3}, nodes, self())
-      ByMove.module_wait_for_func(Transaction, {:deposit, 3}, nodes, self(), [{:withdraw, 3}])
+      ast = ByMove.module_wait_for_func(Transaction, {:deposit, 3}, nodes, self(), [{:withdraw, 3}])
     end
 
     IO.puts "has func deposit"
+    IO.inspect ast
     deposit = Function.capture(Transaction, :deposit, 3)
 
     transaction = Function.capture(Transaction, :transaction, 6)
