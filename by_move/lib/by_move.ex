@@ -55,7 +55,8 @@ defmodule ByMove do
     #get file, insert function into module ast, reload module.
     new_ast = insert_func(ast, func)
     ast_updated = insert_ast(new_ast, insert_ast(new_ast))
-    Code.compile_quoted(ast_updated, "./error.txt")
+    Code.compile_quoted(ast_updated)
+    IO.inspect(ast_updated)
     ast_updated
   end
 
@@ -173,6 +174,7 @@ defmodule ByMove do
               IO.puts "I don't have it and it's protected"
             end
             # If its protected, i will release it sooner or later. So, send the message to myself again
+            # to be processed later
             send(self, {:need_func, {func_needed, arity_needed}, origin})
           else
             IO.puts "I don't have it"
