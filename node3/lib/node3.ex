@@ -86,7 +86,7 @@ defmodule Node3 do
     authenticated? = GenServer.call(authentication_pid, {:authenticate, db_server, "Alice", "password123"})
     IO.puts "received authenticate"
 
-    if !authentication_result do
+    if !authenticated? do
       IO.puts("Authentication failed")
     end
 
