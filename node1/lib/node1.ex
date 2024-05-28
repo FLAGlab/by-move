@@ -109,6 +109,7 @@ defmodule AuthServer do
 
   @impl true
   def handle_call({:authenticate, user, password}, _from, state) do
+    IO.inspect(state)
     result = Authentication.authenticate(state, user, password)
     {:reply, result, state}
   end
