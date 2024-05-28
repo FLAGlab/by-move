@@ -214,7 +214,7 @@ defmodule ByMove do
   def module_wait_for_func(module, {func_name, arity}, destinations, origin, protected \\ []) do
     get_ast = Function.capture(module, :get_ast, 0)
     ast = get_ast.()
-    wait_for_func(ast, {func_name, arity}, destinations, origin, protected)
+    wait_for_func(ast, {func_name, arity}, destinations, origin, protected ++ [{func_name, arity}])
   end
 
 end
