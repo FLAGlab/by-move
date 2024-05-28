@@ -8,7 +8,7 @@ defmodule Node2 do
       IO.puts "Waiting for authenticate"
       ByMove.i_need_func({:authenticate, 3}, nodes, self())
       ast_ithink = ByMove.module_wait_for_func(Users, {:authenticate, 3}, nodes, self(), [])
-      IO.inspect(ast_ithink)
+      # IO.inspect(ast_ithink)
     end
 
     IO.puts "has func authenticate"
@@ -84,7 +84,7 @@ defmodule Node2 do
 
   def mark_done() do
     pid = :global.whereis_name(:ready)
-    send(pid, :node1_done)
+    send(pid, :node2_done)
   end
 
 end

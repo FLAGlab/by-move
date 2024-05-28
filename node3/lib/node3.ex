@@ -118,7 +118,7 @@ defmodule Node3 do
 
   def mark_done() do
     pid = :global.whereis_name(:ready)
-    send(pid, :node1_done)
+    send(pid, :node3_done)
   end
 end
 
