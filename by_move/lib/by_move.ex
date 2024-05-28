@@ -156,13 +156,13 @@ defmodule ByMove do
     receive do
       {:func_def, func_def} ->  IO.puts "Received function!"
                                 ByMove.insert_func_load(ast, func_def)
-      {:need_func, {func_name, arity}, origin} ->
+      {:need_func, {func_needed, arity_needed}, origin} ->
         IO.puts "Received need func #{func_name}"
-        new_ast = if !({func_name, arity} in protected)  && ByMove.have_func?(ast, {func_name, arity}) do
+        new_ast = if !({func_needed, arity_needed} in protected)  && ByMove.have_func?(ast, {func_needed, arity_needed}) do
           IO.puts "I have it, sending..."
-          ByMove.send_by_move(origin, {func_name, arity}, ast)
+          ByMove.send_by_move(origin, {func_needed, arity_needed}, ast)
         else
-          if {func_name, arity} in protected do
+          if {func_needed, arity_needed} in protected do
             IO.puts "I have it, but it's protected"
           else
             IO.puts "I don't have it"
