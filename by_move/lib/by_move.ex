@@ -24,10 +24,6 @@ defmodule ByMove do
 
   def send_by_move(dest, {func_name, func_arity}, ast) do
     func_def = get_func_def(ast, {func_name, func_arity})
-    IO.puts("Sending func:")
-    # IO.inspect func_def
-    IO.puts "AST:------------------------------------------"
-    # IO.inspect ast
     new_ast = delete_func_load(ast, {func_name,func_arity})
     send(dest, {:func_def, func_def})
     new_ast
@@ -57,12 +53,8 @@ defmodule ByMove do
 
   def insert_func_load(ast, func) do
     #get file, insert function into module ast, reload module.
-    IO.puts "Inserting func:"
-    # IO.inspect func
     new_ast = insert_func(ast, func)
     ast_updated = insert_ast(new_ast, insert_ast(new_ast))
-    IO.puts "To be compiled:"
-    # IO.inspect ast_updated
     Code.compile_quoted(ast_updated, "./error.txt")
     ast_updated
   end
@@ -117,8 +109,6 @@ defmodule ByMove do
     [do: {name, meta, delete_func(args, func)}]
   end
   def delete_func([x|xs], {func_name, parity}) do
-    IO.puts "Deleting func: ------------------------------"
-    # IO.inspect x
     if pattern_match_function(x, {func_name, parity}) do
       xs
     else
@@ -162,18 +152,23 @@ defmodule ByMove do
     end
   end
   def wait_for_func(ast, {func_name, arity}, destinations, self, protected) do
-    IO.puts "waiting........."
+    IO.puts "waiting for func #{func_name}"
     receive do
-      {:func_def, func_def} ->  IO.puts "Received func def:"
-                                # IO.inspect func_def
+      {:func_def, func_def} ->  IO.puts "Received function!"
                                 ByMove.insert_func_load(ast, func_def)
       {:need_func, {func_name, arity}, origin} ->
+        IO.puts "Received need func #{func_name}"
         new_ast = if !({func_name, arity} in protected)  && ByMove.have_func?(ast, {func_name, arity}) do
+          IO.puts "I have it, sending..."
           ByMove.send_by_move(origin, {func_name, arity}, ast)
         else
+          if {func_name, arity} in protected do
+            IO.puts "I have it, but it's protected"
+          else
+            IO.puts "I don't have it"
+          end
           ast
         end
-        # i_need_func({func_name, arity}, destinations, self)
         wait_for_func(new_ast, {func_name, arity}, destinations, self, protected)
       _ -> wait_for_func(ast, {func_name, arity},destinations, self, protected)
     end

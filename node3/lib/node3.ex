@@ -23,6 +23,7 @@ defmodule Node3 do
       ByMove.module_wait_for_func(Transaction,{:get_balance, 2}, nodes, self(), [])
     end
 
+    IO.puts "has func get_balance"
     get_balance = Function.capture(Transaction, :get_balance, 2)
     balance = get_balance.(db_server, "Alice")
 
@@ -52,6 +53,7 @@ defmodule Node3 do
     transaction = Function.capture(Transaction, :transaction, 6)
     transaction.(db_server, "Alice", "Bob", 100, withdraw, deposit)
 
+    IO.puts "Process done"
     mark_done()
     finish()
   end

@@ -12,8 +12,8 @@ defmodule Node1 do
     end
 
     if !ByMove.has_func?(Authentication, {:get_balance, 2}) do
-      ByMove.i_need_func({:get_balance, 2}, nodes, self())
       IO.puts("Waiting for get_balance")
+      ByMove.i_need_func({:get_balance, 2}, nodes, self())
       ByMove.module_wait_for_func(Authentication,{:get_balance, 2}, nodes, self(), [])
     end
 
@@ -35,6 +35,7 @@ defmodule Node1 do
 
     withdraw = Function.capture(Authentication, :withdraw, 3)
     new_balance = withdraw.(db_server, "Alice", 50)
+    IO.puts "Process done"
     IO.puts("New balance: #{new_balance}")
     mark_done()
     finish()

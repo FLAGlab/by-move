@@ -5,10 +5,12 @@ defmodule Node2 do
     wait_till_start()
 
     if !ByMove.has_func?(Users, {:authenticate, 3}) do
+      IO.puts "Waiting for authenticate"
       ByMove.i_need_func({:authenticate, 3}, nodes, self())
       ByMove.module_wait_for_func(Users, {:authenticate, 3}, nodes, self(), [])
     end
 
+    IO.puts "has func authenticate"
     authenticate = Function.capture(Users, :authenticate, 3)
 
     authenticated? = authenticate.(db_server, "Bob", "penguin1")
@@ -19,12 +21,15 @@ defmodule Node2 do
     end
 
     if !ByMove.have_func?(Users, {:deposit, 3}) do
+      IO.puts "Waiting for deposit"
       ByMove.i_need_func({:deposit, 3}, nodes, self())
       ByMove.module_wait_for_func(Users, {:deposit, 3}, nodes, self(), [])
     end
 
+    IO.puts "has func deposit"
     deposit = Function.capture(Users, :deposit, 3)
     new_balance = deposit.(db_server, "Bob", 100)
+    IO.puts "Process done"
     IO.puts("New balance: #{new_balance}")
     mark_done()
     finish()
