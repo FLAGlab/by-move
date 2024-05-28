@@ -88,6 +88,10 @@ defmodule UserServer do
   use GenServer
 
   @impl true
+  def init(state) do
+    {:ok, state}
+  end
+  @impl true
   def handle_call({:get_balance, user}, _from, state) do
     balance = Users.get_balance(state, user)
     {:reply, balance, state}

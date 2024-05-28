@@ -125,6 +125,10 @@ defmodule TransactionServer do
   use GenServer
 
   @impl true
+  def init(state) do
+    {:ok, state}
+  end
+  @impl true
   def handle_call({:withdraw, user, amount}, _from, state) do
     new_balance = Transaction.withdraw(state, user, amount)
     {:reply, new_balance, state}

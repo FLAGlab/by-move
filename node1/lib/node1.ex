@@ -103,6 +103,11 @@ defmodule AuthServer do
   use GenServer
 
   @impl true
+  def init(state) do
+    {:ok, state}
+  end
+
+  @impl true
   def handle_call({:authenticate, user, password}, _from, state) do
     result = Authentication.authenticate(state, user, password)
     {:reply, result, state}
