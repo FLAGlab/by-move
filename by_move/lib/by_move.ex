@@ -89,7 +89,7 @@ defmodule ByMove do
 
   def insert_ast([do: {:__block__, meta, args}], ast) when is_list(args) do
     #TODO case where module defines only 1 function
-    case hd(head) do
+    case hd(args) do
       {:@, _, _} -> [do: {:__block__, meta, [ast] ++ tl(args)}]
       _ -> [do: {:__block__, meta, [ast] ++ args}]
     end
