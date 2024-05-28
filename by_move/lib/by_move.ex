@@ -163,16 +163,24 @@ defmodule ByMove do
         new_ast = if (!({func_needed, arity_needed} in protected) && ByMove.have_func?(ast, {func_needed, arity_needed})) do
           IO.puts "I have it, sending..."
           ByMove.send_by_move(origin, {func_needed, arity_needed}, ast)
+          #resend need func just in case
+          # ByMove.i_need_func({func_name, arity}, destinations, self)
         else
           if {func_needed, arity_needed} in protected do
-            IO.puts "I have it, but it's protected"
+            if ByMove.have_func?(ast, {func_needed, arity_needed}) do
+              IO.puts "I have it, but it's protected"
+            else
+              IO.puts "I don't have it and it's protected"
+            end
+            # If its protected, i will release it sooner or later. So, send the message to myself again
+            send(self, {:need_func, {func_needed, arity_needed}, origin})
           else
             IO.puts "I don't have it"
           end
           ast
         end
         wait_for_func(new_ast, {func_name, arity}, destinations, self, protected)
-      x -> IO.puts "Received unexpected message: #{x}"
+      x -> IO.puts "Received unexpected message: #{inspect(x)}"
         wait_for_func(ast, {func_name, arity},destinations, self, protected)
     end
   end
@@ -192,7 +200,8 @@ defmodule ByMove do
           ast
         end
         release_functions(new_ast)
-      _ -> release_functions(ast)
+      x -> IO.puts "Received unexpected message: #{inspect(x)}"
+        release_functions(ast)
     end
   end
 
