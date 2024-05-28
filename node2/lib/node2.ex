@@ -76,8 +76,9 @@ defmodule Node2 do
     ByMove.module_release_functions(Users)
   end
 
-  def mark_done(db_server) do
-    :global.register_name(:node2_done, db_server)
+  def mark_done() do
+    pid = :global.whereis_name(:ready)
+    send(pid, :node1_done)
   end
 
 end

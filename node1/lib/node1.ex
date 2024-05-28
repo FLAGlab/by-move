@@ -36,7 +36,7 @@ defmodule Node1 do
     withdraw = Function.capture(Authentication, :withdraw, 3)
     new_balance = withdraw.(db_server, "Alice", 50)
     IO.puts("New balance: #{new_balance}")
-    mark_done(db_server)
+    mark_done()
     finish()
   end
 
@@ -79,7 +79,7 @@ defmodule Node1 do
     end
 
     IO.puts("New balance: #{new_balance}")
-    mark_done(db_server)
+    mark_done()
   end
 
   def wait_till_start do
@@ -95,8 +95,9 @@ defmodule Node1 do
     ByMove.module_release_functions(Authentication)
   end
 
-  def mark_done(db_server) do
-    :global.register_name(:node1_done, db_server)
+  def mark_done() do
+    pid = :global.whereis_name(:ready)
+    send(pid, :node1_done)
   end
 
 end

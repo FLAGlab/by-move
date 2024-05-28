@@ -29,15 +29,14 @@ defmodule Database do
     IO.puts("Time taken: #{end_time - start_time}ms")
   end
 
-  def wait_till_finish do
-    if :global.whereis_name(:node1_done) == :undefined do
-      wait_till_finish()
-    end
-    if :global.whereis_name(:node2_done) == :undefined do
-      wait_till_finish()
-    end
-    if :global.whereis_name(:node3_done) == :undefined do
-      wait_till_finish()
+  def wait_till_finish({node1, node2, node3}) do
+    unless node1 and node2 and node3 do
+      receive do
+        :node1_done -> wait_till_finish({true, node2, node3})
+        :node2_done -> wait_till_finish({node1, true, node3})
+        :node3_done -> wait_till_finish({node1, node2, true})
+        x -> IO.puts("Received unexpected message: #{x}")
+      end
     end
   end
 

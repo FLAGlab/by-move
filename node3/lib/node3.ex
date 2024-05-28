@@ -52,7 +52,7 @@ defmodule Node3 do
     transaction = Function.capture(Transaction, :transaction, 6)
     transaction.(db_server, "Alice", "Bob", 100, withdraw, deposit)
 
-    mark_done(db_server)
+    mark_done()
     finish()
   end
 
@@ -99,7 +99,7 @@ defmodule Node3 do
     IO.puts "here"
     Transaction.transaction(db_server, "Alice", "Bob", 100, &Transaction.withdraw/3, &Transaction.deposit/3)
     IO.puts "done"
-    mark_done(db_server)
+    mark_done()
   end
 
   def wait_till_start do
@@ -114,8 +114,9 @@ defmodule Node3 do
   end
 
 
-  def mark_done(db_server) do
-    :global.register_name(:node3_done, db_server)
+  def mark_done() do
+    pid = :global.whereis_name(:ready)
+    send(pid, :node1_done)
   end
 end
 
