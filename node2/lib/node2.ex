@@ -7,7 +7,8 @@ defmodule Node2 do
     if !ByMove.has_func?(Users, {:authenticate, 3}) do
       IO.puts "Waiting for authenticate"
       ByMove.i_need_func({:authenticate, 3}, nodes, self())
-      ByMove.module_wait_for_func(Users, {:authenticate, 3}, nodes, self(), [])
+      ast_ithink = ByMove.module_wait_for_func(Users, {:authenticate, 3}, nodes, self(), [])
+      IO.inspect(ast_ithink)
     end
 
     IO.puts "has func authenticate"
@@ -22,9 +23,6 @@ defmodule Node2 do
 
     if !ByMove.have_func?(Users, {:deposit, 3}) do
       IO.puts "Waiting for deposit"
-      get_ast = Function.capture(Users, :get_ast, 0)
-      ast = get_ast.()
-      IO.inspect ast
       ByMove.i_need_func({:deposit, 3}, nodes, self())
       ByMove.module_wait_for_func(Users, {:deposit, 3}, nodes, self(), [])
     end
