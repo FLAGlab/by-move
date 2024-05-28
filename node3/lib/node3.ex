@@ -83,14 +83,14 @@ defmodule Node3 do
     # authenticate, get_balance, withdraw, deposit
 
     IO.puts "sending authenticate"
-    authenticated? = GenServer.call(authentication_pid, {:authenticate, db_server, "Alice", "password123"})
+    authenticated? = GenServer.call(authentication_pid, {:authenticate, "Alice", "password123"})
     IO.puts "received authenticate"
 
     if !authenticated? do
       IO.puts("Authentication failed")
     end
 
-    balance = GenServer.call(get_balance_pid, {:get_balance, db_server, "Alice"})
+    balance = GenServer.call(get_balance_pid, {:get_balance, "Alice"})
 
     if balance < 50 do
       IO.puts("Insufficient funds")
