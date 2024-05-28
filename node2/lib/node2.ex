@@ -22,6 +22,9 @@ defmodule Node2 do
 
     if !ByMove.have_func?(Users, {:deposit, 3}) do
       IO.puts "Waiting for deposit"
+      get_ast = Function.capture(Users, :get_ast, 0)
+      ast = get_ast.()
+      IO.inspect ast
       ByMove.i_need_func({:deposit, 3}, nodes, self())
       ByMove.module_wait_for_func(Users, {:deposit, 3}, nodes, self(), [])
     end
@@ -114,10 +117,6 @@ defmove Users do
 
   def finish do
     ByMove.release_functions()
-  end
-
-  def get_ast do
-    @ast
   end
 
 end

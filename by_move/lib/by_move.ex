@@ -56,7 +56,6 @@ defmodule ByMove do
     new_ast = insert_func(ast, func)
     ast_updated = insert_ast(new_ast, insert_ast(new_ast))
     Code.compile_quoted(ast_updated)
-    IO.inspect(ast_updated)
     ast_updated
   end
 
@@ -175,7 +174,7 @@ defmodule ByMove do
             end
             # If its protected, i will release it sooner or later. So, send the message to myself again
             # to be processed later
-            :timer.sleep(100)
+            :timer.sleep(1000)
             send(self, {:need_func, {func_needed, arity_needed}, origin})
           else
             IO.puts "I don't have it"
