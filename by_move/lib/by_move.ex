@@ -158,7 +158,7 @@ defmodule ByMove do
                                 ByMove.insert_func_load(ast, func_def)
       {:need_func, {func_needed, arity_needed}, origin} ->
         IO.puts "Received need func #{func_name}"
-        IO.puts "Protected: #{protected}, #{!({func_needed, arity_needed} in protected)}"
+        IO.puts "Protected: #{inspect(protected)}, #{!({func_needed, arity_needed} in protected)}"
         IO.puts "have it? #{ByMove.have_func?(ast, {func_needed, arity_needed})}"
         new_ast = if (!({func_needed, arity_needed} in protected) && ByMove.have_func?(ast, {func_needed, arity_needed})) do
           IO.puts "I have it, sending..."
