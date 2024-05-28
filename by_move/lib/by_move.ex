@@ -87,18 +87,21 @@ defmodule ByMove do
     end
   end
 
-  def insert_ast([do: {:__block__, meta, args}], att) when is_list(args) do
+  def insert_ast([do: {:__block__, meta, args}], ast) when is_list(args) do
     #TODO case where module defines only 1 function
-    [do: {:__block__, meta, [att] ++ args}]
+    case hd(head) do
+      {:@, _, _} -> [do: {:__block__, meta, [ast] ++ tl(args)}]
+      _ -> [do: {:__block__, meta, [ast] ++ args}]
+    end
   end
-  def insert_ast({name, meta, args}, att) do
-    {name, meta, insert_ast(args, att)}
+  def insert_ast({name, meta, args}, ast) do
+    {name, meta, insert_ast(args, ast)}
   end
-  def insert_ast([x|xs], att) do
+  def insert_ast([x|xs], ast) do
     if is_tuple(x) do
-      [x]++insert_ast(xs, att)
+      [x]++insert_ast(xs, ast)
     else
-      [insert_ast(x,att)]
+      [insert_ast(x,ast)]
     end
   end
 
