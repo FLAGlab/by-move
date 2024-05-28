@@ -36,17 +36,6 @@ defmodule Node2 do
     finish()
   end
 
-  def server do
-    db_server = :global.whereis_name(:database)
-    receive do
-      {:get_balance, user, from_pid} ->
-        balance = Users.get_balance(db_server, user)
-        send(from_pid, balance)
-      x -> IO.puts("Unknown message: #{inspect(x)}")
-    end
-    server()
-  end
-
   def main_standard(nodes, db_server) do
     wait_till_start()
 

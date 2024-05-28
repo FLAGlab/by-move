@@ -177,8 +177,8 @@ defmodule ByMove do
             end
             # If its protected, i will release it sooner or later. So, send the message to myself again
             # to be processed later
-            :timer.sleep(100)
-            send(self, {:need_func, {func_needed, arity_needed}, origin})
+            spawn(fn -> :timer.sleep(10)
+                        send(self, {:need_func, {func_needed, arity_needed}, origin}) end)
           else
             IO.puts "I don't have it"
           end

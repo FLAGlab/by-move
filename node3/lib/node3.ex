@@ -59,20 +59,6 @@ defmodule Node3 do
     finish()
   end
 
-  def server do
-    db_server = :global.whereis_name(:database)
-    receive do
-      {:withdraw, user, amount, from_pid} ->
-        new_balance = Transaction.withdraw(db_server, user, amount)
-        send(from_pid, new_balance)
-      {:deposit, user, amount, from_pid} ->
-        new_balance = Transaction.deposit(db_server, user, amount)
-        send(from_pid, new_balance)
-      x -> IO.puts("Unknown message #{inspect(x)}")
-    end
-    server()
-  end
-
   def main_standard(nodes, db_server) do
     wait_till_start()
     IO.puts "started"

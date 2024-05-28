@@ -41,17 +41,6 @@ defmodule Node1 do
     finish()
   end
 
-  def server() do
-    db_server = :global.whereis_name(:database)
-    receive do
-      {:authenticate, user, password, from_pid} ->
-        authenticated? = Authentication.authenticate(db_server, user, password)
-        send(from_pid, authenticated?)
-      x -> IO.puts("Unknown message: #{inspect(x)}")
-    end
-    server()
-  end
-
   def main_standard(nodes, db_server) do
     wait_till_start()
 
