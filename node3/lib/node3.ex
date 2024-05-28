@@ -75,16 +75,19 @@ defmodule Node3 do
 
   def main_standard(nodes, db_server) do
     wait_till_start()
+    IO.puts "started"
 
     authentication_pid = nodes |> Enum.at(0)
     get_balance_pid = nodes |> Enum.at(1)
 
     # authenticate, get_balance, withdraw, deposit
 
+    IO.puts "sending authenticate"
     send(authentication_pid, {:authenticate, db_server, "Alice", "password123", self()})
     authentication_result = receive do
       authentication_result -> authentication_result
     end
+    IO.puts "received authenticate"
 
     if !authentication_result do
       IO.puts("Authentication failed")

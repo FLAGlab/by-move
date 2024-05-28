@@ -55,23 +55,26 @@ defmodule Node1 do
   def main_standard(nodes, db_server) do
     wait_till_start()
 
+    IO.puts "started"
     users_pid = nodes |> Enum.at(0)
     transaction_pid = nodes |> Enum.at(1)
 
     auth = Authentication.authenticate(db_server, "Alice", "password123")
-
     if !auth do
       IO.puts("Authentication failed")
     end
 
+    IO.puts "Getting balance"
     send(users_pid, {:get_balance, "Alice", self()})
     balance = receive do
       balance -> balance
     end
+    IO.puts "Balance: #{balance}"
 
     if balance < 50 do
       IO.puts("Insufficient funds")
     end
+
 
     send(transaction_pid, {:withdraw, "Alice", 50, self()})
     new_balance = receive do

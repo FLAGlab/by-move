@@ -50,13 +50,16 @@ defmodule Node2 do
   def main_standard(nodes, db_server) do
     wait_till_start()
 
+    IO.puts "started"
     auth_pid = nodes |> Enum.at(0)
     transaction_pid = nodes |> Enum.at(1)
 
+    IO.puts "sending authenticate"
     send(auth_pid, {:authenticate, "Bob", "penguin1", self()})
     authenticated? = receive do
       authenticated? -> authenticated?
     end
+    IO.puts "received authenticate"
 
     if !authenticated? do
       IO.puts("Authentication failed")
