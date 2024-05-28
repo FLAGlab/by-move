@@ -170,7 +170,8 @@ defmodule ByMove do
           ast
         end
         wait_for_func(new_ast, {func_name, arity}, destinations, self, protected)
-      _ -> wait_for_func(ast, {func_name, arity},destinations, self, protected)
+      x -> IO.puts "Received unexpected message: #{x}"
+        wait_for_func(ast, {func_name, arity},destinations, self, protected)
     end
   end
 
