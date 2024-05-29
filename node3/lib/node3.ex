@@ -70,12 +70,12 @@ defmodule Node3 do
 
     IO.puts "sending authenticate"
     users_list = 1..n |> Enum.map(fn x -> {"Alice", "password#{x}"} end)
-    authenticated = GenServer.call(authentication_pid, {:multi_authenticate, users_list})
+    authenticated = GenServer.call(authentication_pid, {:multi_authenticate, users_list}, 100000)
                     |> Enum.reduce(0, fn x, acc -> if x do acc + 1 else acc end end)
     IO.puts "received authenticate"
 
     users_list = 1..n |> Enum.map(fn x -> "Alice" end)
-    balance = GenServer.call(get_balance_pid, {:multi_get_balance, users_list}) |> Enum.at(0)
+    balance = GenServer.call(get_balance_pid, {:multi_get_balance, users_list}, 100000) |> Enum.at(0)
 
     Transaction.transaction(db_server, "Alice", "Bob", 100, &Transaction.withdraw/3, &Transaction.deposit/3)
     IO.puts "done"

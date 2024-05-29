@@ -67,7 +67,7 @@ defmodule Node1 do
 
     IO.puts "Getting balance"
     user_list = 1..n |> Enum.map(fn x -> "Alice" end)
-    balance = GenServer.call(users_pid, {:multi_get_balance, user_list}) |> Enum.at(0)
+    balance = GenServer.call(users_pid, {:multi_get_balance, user_list}, 100000) |> Enum.at(0)
     IO.puts "Balance: #{balance}"
 
     new_balance = GenServer.call(transaction_pid, {:withdraw, "Alice", 50})
