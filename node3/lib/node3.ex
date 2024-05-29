@@ -71,6 +71,7 @@ defmodule Node3 do
     IO.puts "sending authenticate"
     users_list = 1..n |> Enum.map(fn x -> {"Alice", "password#{x}"} end)
     authenticated = GenServer.call(authentication_pid, {:multi_authenticate, users_list})
+                    |> Enum.reduce(0, fn x, acc -> if x do acc + 1 else acc end end)
     IO.puts "received authenticate"
 
     users_list = 1..n |> Enum.map(fn x -> "Alice" end)
@@ -125,8 +126,7 @@ defmodule TransactionServer do
     pid = :global.whereis_name(:database)
     user_list
     |> Enum.map(fn user -> Transaction.deposit(pid, user, amount) end)
-    |> List.last()
-    |> fn x -> {:reply, x, state} end.()
+    |> fn list -> {:reply, list, state} end.()
   end
 end
 

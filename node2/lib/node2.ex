@@ -51,11 +51,13 @@ defmodule Node2 do
     IO.puts "sending authenticate"
     users_list = 1..n |> Enum.map(fn x -> {"Bob", "penguin#{x}"} end)
     auth_list = GenServer.call(auth_pid, {:multi_authenticate, users_list})
+                |> Enum.reduce(0, fn x, acc -> if x do acc + 1 else acc end end)
     IO.puts "received authenticate"
 
     IO.puts "Getting balance"
     users_list = 1..n |> Enum.map(fn x -> "Bob" end)
     new_balance = GenServer.call(transaction_pid, {:multi_deposit, users_list, 1})
+                  |> List.last()
     IO.puts("New balance: #{new_balance}")
     mark_done()
   end
