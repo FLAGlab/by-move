@@ -1,15 +1,19 @@
 import ByMove
 
 defmodule Node1 do
-  def main_bymove(nodes, db_server) do
+  def main_bymove(nodes, db_server, n) do
     wait_till_start()
     auth = Function.capture(Authentication, :authenticate, 3)
-    authenticated? = auth.(db_server, "Alice", "password123")
 
-    if !authenticated? do
-      IO.puts("Authentication failed")
-      finish()
-    end
+
+    IO.puts "processing passwords"
+    1..n
+    |> Enum.map(fn x -> "Password#{x}" end)
+    |> Enum.map(fn password -> auth.(db_server, "Alice", password) end)
+    |> Enum.reduce(0, fn x, acc -> if x do acc + 1 else acc end end)
+    |> IO.inspect
+
+
 
     if !ByMove.has_func?(Authentication, {:get_balance, 2}) do
       IO.puts("Waiting for get_balance")
@@ -19,6 +23,12 @@ defmodule Node1 do
 
     IO.puts("has func get_balance")
     get_balance = Function.capture(Authentication, :get_balance, 2)
+
+    IO.puts "Getting balances"
+    1..n
+    |> Enum.map(fn x -> get_balance.(db_server, "Alice") end)
+    |> hd()
+    |> IO.inspect
 
     balance = get_balance.(db_server, "Alice")
     if balance < 50 do
@@ -41,26 +51,24 @@ defmodule Node1 do
     finish()
   end
 
-  def main_standard(nodes, db_server) do
+  def main_standard(nodes, db_server, n) do
     wait_till_start()
 
     IO.puts "started"
     users_pid = nodes |> Enum.at(0)
     transaction_pid = nodes |> Enum.at(1)
 
-    auth = Authentication.authenticate(db_server, "Alice", "password123")
-    if !auth do
-      IO.puts("Authentication failed")
-    end
+    IO.puts "processing passwords"
+    1..n
+    |> Enum.map(fn x -> "password#{x}" end)
+    |> Enum.map(fn password -> Authentication.authenticate(db_server, "Alice", password) end)
+    |> Enum.reduce(0, fn x, acc -> if x do acc + 1 else acc end end)
+    |> IO.inspect
 
     IO.puts "Getting balance"
-    balance = GenServer.call(users_pid, {:get_balance, "Alice"})
+    user_list = 1..n |> Enum.map(fn x -> "Alice" end)
+    balance = GenServer.call(users_pid, {:multi_get_balance, user_list}) |> Enum.at(0)
     IO.puts "Balance: #{balance}"
-
-    if balance < 50 do
-      IO.puts("Insufficient funds")
-    end
-
 
     new_balance = GenServer.call(transaction_pid, {:withdraw, "Alice", 50})
 
@@ -102,6 +110,13 @@ defmodule AuthServer do
     pid = :global.whereis_name(:database)
     result = Authentication.authenticate(pid, user, password)
     {:reply, result, state}
+  end
+
+  def handle_call({:multi_authenticate, user_list}, from, state) do
+    pid = :global.whereis_name(:database)
+    user_list
+    |> Enum.map(fn {user, password} -> Authentication.authenticate(pid, user, password) end)
+    |> fn x -> {:reply, x, state} end.()
   end
 end
 

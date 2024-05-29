@@ -1,25 +1,25 @@
 import ByMove
 
 defmodule Node2 do
-  def main_bymove(nodes, db_server) do
+  def main_bymove(nodes, db_server, n) do
     wait_till_start()
 
     if !ByMove.has_func?(Users, {:authenticate, 3}) do
       IO.puts "Waiting for authenticate"
       ByMove.i_need_func({:authenticate, 3}, nodes, self())
-      ast_ithink = ByMove.module_wait_for_func(Users, {:authenticate, 3}, nodes, self(), [])
-      # IO.inspect(ast_ithink)
+      ByMove.module_wait_for_func(Users, {:authenticate, 3}, nodes, self(), [])
     end
 
     IO.puts "has func authenticate"
     authenticate = Function.capture(Users, :authenticate, 3)
 
-    authenticated? = authenticate.(db_server, "Bob", "penguin1")
+    IO.puts "processing passwords"
+    1..n
+    |> Enum.map(fn x -> "penguin#{x}" end)
+    |> Enum.map(fn password -> authenticate.(db_server, "Bob", password) end)
+    |> Enum.reduce(0, fn x, acc -> if x do acc + 1 else acc end end)
+    |> IO.inspect
 
-    if !authenticated? do
-      IO.puts("Authentication failed")
-      finish()
-    end
 
     if !ByMove.have_func?(Users, {:deposit, 3}) do
       IO.puts "Waiting for deposit"
@@ -29,14 +29,19 @@ defmodule Node2 do
 
     IO.puts "has func deposit"
     deposit = Function.capture(Users, :deposit, 3)
-    new_balance = deposit.(db_server, "Bob", 100)
+
+    IO.puts "depositing #{n} times"
+    1..n
+    |> Enum.map(fn x -> deposit.(db_server, "Bob", 1) end)
+    |> List.last()
+    |> IO.inspect
+
     IO.puts "Process done"
-    IO.puts("New balance: #{new_balance}")
     mark_done()
     finish()
   end
 
-  def main_standard(nodes, db_server) do
+  def main_standard(nodes, db_server, n) do
     wait_till_start()
 
     IO.puts "started"
@@ -44,14 +49,13 @@ defmodule Node2 do
     transaction_pid = nodes |> Enum.at(1)
 
     IO.puts "sending authenticate"
-    authenticated? = GenServer.call(auth_pid, {:authenticate, "Bob", "penguin1"})
+    users_list = 1..n |> Enum.map(fn x -> {"Bob", "penguin#{x}"} end)
+    auth_list = GenServer.call(auth_pid, {:multi_authenticate, users_list})
     IO.puts "received authenticate"
 
-    if !authenticated? do
-      IO.puts("Authentication failed")
-    end
-
-    new_balance = GenServer.call(transaction_pid, {:deposit, "Bob", 100})
+    IO.puts "Getting balance"
+    users_list = 1..n |> Enum.map(fn x -> "Bob" end)
+    new_balance = GenServer.call(transaction_pid, {:multi_deposit, users_list, 1})
     IO.puts("New balance: #{new_balance}")
     mark_done()
   end
@@ -85,6 +89,13 @@ defmodule UserServer do
     pid = :global.whereis_name(:database)
     balance = Users.get_balance(pid, user)
     {:reply, balance, state}
+  end
+
+  def handle_call({:multi_get_balance, user_list}, _from, state) do
+    pid = :global.whereis_name(:database)
+    user_list
+    |> Enum.map(fn user -> Users.get_balance(pid, user) end)
+    |> fn balances -> {:reply, balances, state} end.()
   end
 end
 
