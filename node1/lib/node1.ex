@@ -70,7 +70,7 @@ defmodule Node1 do
     balance = GenServer.call(users_pid, {:multi_get_balance, user_list}, 100000) |> Enum.at(0)
     IO.puts "Balance: #{balance}"
 
-    new_balance = GenServer.call(transaction_pid, {:withdraw, "Alice", 50})
+    new_balance = GenServer.call(transaction_pid, {:withdraw, "Alice", 50}, 100000)
 
     IO.puts("New balance: #{new_balance}")
     mark_done()
