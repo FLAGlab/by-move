@@ -1,8 +1,21 @@
-module Actor {
-    define maibox := []
-    define behavior := Set
-    define state := Set 
+load "list-of.ath"
 
-    define send := ()
-    define receive := ()
+module Actor {
+    module Msg {
+        datatype (Message Ide Ids Idd) := (message' Ide Ids Idd)
+    }
+
+    datatype (Actor Ide LS LB LM) := (actor' Ide LS LB LM) 
+
+    declare make : (Ide, LS, LB, LM) [Ide LS LB LM] -> (Actor Ide LS LB LM)
+  #  declare send : [Ide ActorS ActorD] -> Msg
+  #  declare receive : [Msg] -> Actor.Actor
+
+    #define 
+    define name := ?name : Ide
+    define (make name) := 
+        (forall name:Ide . (actor' name nil nil nil))
+    
+    
+
 }
