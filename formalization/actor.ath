@@ -5,16 +5,27 @@ module Actor {
         datatype (Message Ide Ids Idd) := (message' Ide Ids Idd)
     }
 
-    datatype (Actor Ide LS LB LM) := (actor' Ide LS LB LM) 
+    datatype ActorState := exit | active | busy
+    datatype (Actor Ide Expressions ProcessBehavior Mailbox) := (actor' Ide Expressions ProcessBehavior Mailbox) 
 
-    declare make : (Ide, LS, LB, LM) [Ide LS LB LM] -> (Actor Ide LS LB LM)
+    declare spawn : (Ide, Expressions, ProcessBehavior, Mailbox) [Ide Expressions ProcessBehavior Mailbox] -> (Actor Ide Expressions ProcessBehavior Mailbox)
+    declare ready : (Ide, Expressions, ProcessBehavior, Mailbox) [(Actor Ide Expressions ProcessBehavior Mailbox)] -> ActorState
   #  declare send : [Ide ActorS ActorD] -> Msg
   #  declare receive : [Msg] -> Actor.Actor
 
-    #define 
     define name := ?name : Ide
-    define (make name) := 
-        (forall name:Ide . (actor' name nil nil nil))
+    define (spawn_name) := 
+        (forall name . (spawn name) = (actor' name nil nil nil))
+
+    assert ready := 
+    (fun [
+        (ready (actor' [name ::E] PB M)) = (actor' name E PB M)
+    ])
+    
+        
+        (forall actor . (ready (actor' [name::busy] PB M)) = (actor' name E PB M)
+        (forall actor . (ready (actor' name exit PB M)) = nil)))
+
     
     
 
