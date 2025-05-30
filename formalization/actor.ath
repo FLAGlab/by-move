@@ -1,0 +1,8 @@
+module Actor {
+    define maibox := []
+    define behavior := Set
+    define state := Set 
+
+    define send := ()
+    define receive := ()
+}
