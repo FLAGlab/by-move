@@ -1,0 +1,53 @@
+load "list-of.ath"
+module Actor{
+    open List
+    domains FrameStack, Expression, Value, Flag
+    datatype Actor 
+             := (LiveActor
+                    Ide # actor name, this is no in the paper, but how else do I identify an actor?
+                    FrameStack
+                    Expression
+                    (List Value) # mailbox TODO: Change to list of messages
+                    (List Ide) # set of linked actors, TODO: Change it to a set...
+                    Flag
+                )|(TerminatedActor (List Ide))  # list of linked actors
+    datatype Signal := (msg Value) | (exit Value Flag) | link | unlink 
+    datatype Action := (send Ide Ide Signal) | (rec Value) | (self Ide) | 
+                       (arr Ide Ide Signal) | (spawn Ide Expression Expression) | 
+                       sequential | termination | Flag
+
+    define [frameStack expression mailbox linkedActors flag actorIde actorIdeTo actorIdeFrom value]
+            :=
+            [
+                ?frameStack:      FrameStack
+                ?expression:      Expression
+                ?mailbox:         (List Value)
+                ?linkedActors:    (List Ide)
+                ?flag:            Flag
+                ?actorIde:        Ide
+                ?actorIdeTo:      Ide
+                ?actorIdeFrom:    Ide
+                ?value:           Value
+            ] 
+    define msg'   := (msg value)
+    define arr'   := (arr actorIdeFrom actorIdeTo msg')
+    define actor' := (LiveActor actorIdeTo frameStack expression mailbox linkedActors flag)
+    declare ArrReduction : [Actor Action] -> Actor
+    assert* arr-msg := (
+                       (ArrReduction actor' arr') 
+                            = (
+                               LiveActor 
+                                actorIdeTo
+                                frameStack
+                                expression
+                                (mailbox ++ [value])
+                                linkedActors
+                                flag
+                              ) 
+                       )
+    # assert* arr-exit-drop := (
+
+    #                          )
+
+
+}
