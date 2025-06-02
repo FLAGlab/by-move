@@ -1,32 +1,59 @@
 load "list-of.ath"
 
 module Actor {
-    module Msg {
-        datatype (Message Ide Ids Idd) := (message' Ide Ids Idd)
-    }
+    # module Msg {
+    #   datatype (Message Ide Ids Idd) := (message' Ide Ids Idd)
+    # }
+    open List
 
+    domains expressions, processBehavior
+    # declare exit : expressions
     datatype ActorState := exit | active | busy
-    datatype (Actor Ide Expressions ProcessBehavior Mailbox) := (actor' Ide Expressions ProcessBehavior Mailbox) 
+    # TODO: With this definition of messages they cant have any payload.
+    datatype Message := (message' Ide Ide Ide)
 
-    declare spawn : (Ide, Expressions, ProcessBehavior, Mailbox) [Ide Expressions ProcessBehavior Mailbox] -> (Actor Ide Expressions ProcessBehavior Mailbox)
-    declare ready : (Ide, Expressions, ProcessBehavior, Mailbox) [(Actor Ide Expressions ProcessBehavior Mailbox)] -> ActorState
-  #  declare send : [Ide ActorS ActorD] -> Msg
-  #  declare receive : [Msg] -> Actor.Actor
+    datatype Actor := (
+                        actor'
+                              Ide
+                              (List expressions) 
+                              (List processBehavior)
+                              (List Message)
+                      )
 
-    define name := ?name : Ide
-    define (spawn_name) := 
-        (forall name . (spawn name) = (actor' name nil nil nil))
+    define [actorName senderIde destinationIde messageName messagesList expressionsList processBehaviorList] 
+            := [
+                ?actorName:           Ide
+                ?senderIde:           Ide
+                ?destinationIde:      Ide
+                ?messageName:         Ide
+                ?messagesList:        (List Message)
+                ?expressionsList:     (List expressions)
+                ?processBehaviorList: (List processBehavior)
+               ]
 
-    assert ready := 
-    (fun [
-        (ready (actor' [name ::E] PB M)) = (actor' name E PB M)
-    ])
-    
-        
-        (forall actor . (ready (actor' [name::busy] PB M)) = (actor' name E PB M)
-        (forall actor . (ready (actor' name exit PB M)) = nil)))
+    define [Actor0 Message0 Message1 Message2 ] 
+            := [
+                ?actor0:   Actor
+                ?Message0: Message
+                ?Message1: Message
+                ?Message2: Message
+              ]
 
-    
-    
+    declare spawn : [ Ide ] -> Actor
+    assert* spawn-def := (spawn actorName = actor' actorName nil nil nil)
 
+    # TODO: As mentioned above, there is no payload in the messages!!
+    declare send : [Ide Ide Ide] -> Message 
+    assert* send-def := ((send messageName senderIde destinationIde) 
+                          = (message' senderIde destinationIde messageName))
+
+    declare receive : [Message] -> Actor
+
+    # declare ready : (Ide, Expressions, ProcessBehavior, Mailbox) [(Actor Ide Expressions ProcessBehavior Mailbox)] -> ActorState
+    # assert ready := 
+    # (fun [
+    #     (ready (actor' [name ::E] PB M)) = (actor' name E PB M)
+    # ])
+    #     (forall actor . (ready (actor' [name::busy] PB M)) = (actor' name E PB M)
+    #     (forall actor . (ready (actor' name exit PB M)) = nil)))
 }
