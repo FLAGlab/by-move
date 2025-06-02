@@ -2,6 +2,8 @@ load "list-of.ath"
 module Actor{
     open List
     domains FrameStack, Expression, Value, Flag
+    declare normal, kill, EXIT: Value
+    declare ff, tt: Flag
     datatype Actor 
              := (LiveActor
                     Ide # actor name, this is no in the paper, but how else do I identify an actor?
@@ -16,7 +18,7 @@ module Actor{
                        (arr Ide Ide Signal) | (spawn Ide Expression Expression) | 
                        sequential | termination | Flag
 
-    define [frameStack expression mailbox linkedActors flag actorIde actorIdeTo actorIdeFrom value]
+    define [frameStack expression mailbox linkedActors flag flag0 actorIde actorIdeTo actorIdeFrom value]
             :=
             [
                 ?frameStack:      FrameStack
@@ -24,30 +26,72 @@ module Actor{
                 ?mailbox:         (List Value)
                 ?linkedActors:    (List Ide)
                 ?flag:            Flag
+                ?flag0:            Flag
                 ?actorIde:        Ide
                 ?actorIdeTo:      Ide
                 ?actorIdeFrom:    Ide
                 ?value:           Value
             ] 
-    define msg'   := (msg value)
-    define arr'   := (arr actorIdeFrom actorIdeTo msg')
-    define actor' := (LiveActor actorIdeTo frameStack expression mailbox linkedActors flag)
+    ############################################################## Process local semantics
+    define exit'      := (exit value flag0)
+    define msg'       := (msg value)
+    define arr-msg'   := (arr actorIdeFrom actorIdeTo msg')
+    define arr-exit'  := (arr actorIdeFrom actorIdeTo exit')
+    define arr-link'  := (arr actorIdeFrom actorIdeTo link)
+    define actor'   := (LiveActor actorIdeTo frameStack expression mailbox linkedActors flag)
     declare ArrReduction : [Actor Action] -> Actor
-    assert* arr-msg := (
-                       (ArrReduction actor' arr') 
-                            = (
-                               LiveActor 
-                                actorIdeTo
-                                frameStack
-                                expression
-                                (mailbox ++ [value])
-                                linkedActors
-                                flag
-                              ) 
-                       )
-    # assert* arr-exit-drop := (
+    assert* arr-msg :=  (
+                            (ArrReduction actor' arr-msg') 
+                            = 
+                            (
+                                LiveActor 
+                                    actorIdeTo
+                                    frameStack
+                                    expression
+                                    (mailbox ++ [value])
+                                    linkedActors
+                                    flag
+                            ) 
+                        )
+    assert* arr-exit-drop-0 := 
+                            (
+                                (not (actorIdeFrom = actorIdeTo)) &
+                                (flag = ff) &
+                                (value = normal) & 
+                                (
+                                    (ArrReduction actor' arr-exit')
+                                    =
+                                    actor'
+                                )
+                            )
 
-    #                          )
+    assert* arr-exit-drop-1 :=
+                            (
+                                (not (actorIdeFrom = actorIdeTo)) &
+                                (not (actorIdeFrom in linkedActors)) &
+                                (flag = ff) &
+                                (
+                                    (ArrReduction actor' arr-exit')
+                                    =
+                                    actor'
+                                )
+                            )
+    # TODO: ExitTerm and ExitConv rule page 12
 
+    assert* arr-link := ( 
+                            (ArrReduction actor' arr-link')
+                            =
+                            (
+                                LiveActor 
+                                    actorIdeTo
+                                    frameStack
+                                    expression
+                                    mailbox
+                                    ( actorIdeFrom :: linkedActors )
+                                    flag
+                            ) 
+                        )
+    
+    # TODO: UnlinkArr, to achieve this I need to implement the rem operation
 
 }
