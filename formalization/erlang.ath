@@ -56,7 +56,19 @@ module Actor{
     define arr-link'      := (Action (arr actorIdeFrom actorIdeTo link)) 
     define actor'         := (Actor (LiveActor actorIdeTo frameStack expression mailbox linkedActors flag))
     define arr-msg-actor' := (Actor (LiveActor actorIdeTo frameStack expression (mailbox ++ [value]) linkedActors flag))
+    define arr-link-actor':= (Actor (LiveActor actorIdeTo frameStack expression mailbox ( actorIdeFrom :: linkedActors ) flag))
+    define reduce-drop-exit' :=
+                            (
+                                (reduce 
+                                    (cg config (cg (One actor') (One arr-exit')))
+                                )
+                                =
+                                (cg config (One actor'))
+                            )
     ###################################################################################### 
+    # TODO: Define all the assert for reduce inside just one fun as in RAFT
+    # reduce-null is not presented in the paper, just for completeness.
+    assert* reduce-null := (reduce Null = Null)
     assert* reduce-arr := 
                         (
                             (reduce 
@@ -65,44 +77,37 @@ module Actor{
                             = 
                             (cg config (One arr-msg-actor'))
                         )
-    # assert* arr-exit-drop-0 := 
-    #                         (
-    #                             (not (actorIdeFrom = actorIdeTo)) &
-    #                             (flag = ff) &
-    #                             (value = NORMAL) & 
-    #                             (
-    #                                 (ArrReduction actor' arr-exit')
-    #                                 =
-    #                                 actor'
-    #                             )
-    #                         )
-
-    # assert* arr-exit-drop-1 :=
-    #                         (
-    #                             (not (actorIdeFrom = actorIdeTo)) &
-    #                             (not (actorIdeFrom in linkedActors)) &
-    #                             (flag = ff) &
-    #                             (
-    #                                 (ArrReduction actor' arr-exit')
-    #                                 =
-    #                                 actor'
-    #                             )
-    #                         )
+    # The paper presents arr-exit-drop-0 and 1 as just one reduction rule, but I think
+    # that it is better to have it a two separate rules, thinking on proofs that might
+    # need them.
+    assert* arr-exit-drop-0 := 
+                            (
+                                ((not (actorIdeFrom = actorIdeTo)) &
+                                (flag = ff) &
+                                (value = NORMAL)) 
+                                ==>
+                                reduce-drop-exit'
+                            )
+    assert* arr-exit-drop-1 :=
+                            (
+                                (
+                                (not (actorIdeFrom = actorIdeTo)) &
+                                (not (actorIdeFrom in linkedActors)) &
+                                (flag = ff) 
+                                ) 
+                                ==>
+                                reduce-drop-exit'
+                            )
     # # TODO: ExitTerm and ExitConv rule page 12
 
-    # assert* arr-link := ( 
-    #                         (ArrReduction actor' arr-link')
-    #                         =
-    #                         (
-    #                             LiveActor 
-    #                                 actorIdeTo
-    #                                 frameStack
-    #                                 expression
-    #                                 mailbox
-    #                                 ( actorIdeFrom :: linkedActors )
-    #                                 flag
-    #                         ) 
-    #                     )
+    assert* arr-link := ( 
+                            (reduce 
+                                (cg config (cg (One actor') (One arr-link')))
+                            )
+                            # (ArrReduction actor' arr-link')
+                            =
+                            (One arr-link-actor') 
+                        )
     
     # TODO: UnlinkArr, to achieve this I need to implement the rem operation
 
