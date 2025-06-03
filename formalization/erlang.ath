@@ -1,9 +1,17 @@
 load "list-of.ath"
+load "config.ath"
 module Actor{
     open List
-    domains FrameStack, Expression, Value, Flag
-    declare normal, kill, EXIT: Value
+    domains Expression, Value, Flag
+    declare NORMAL, KILL, EXIT: Value
     declare ff, tt: Flag
+    
+    # TODO: FrameStack incomplete definition, just define the needed for Figure.3.Pag.13 
+    datatype FrameStack := (bang' Ide) | (exit' Ide) | link' | unlink'
+    datatype Signal := (msg Value) | (exit Value Flag) | link | unlink 
+    datatype Action := (send Ide Ide Signal) | (rec Value) | (self Ide) | 
+                       (arr Ide Ide Signal) | (spawn Ide Expression Expression) | 
+                       sequential | termination | Flag
     datatype Actor 
              := (LiveActor
                     Ide # actor name, this is no in the paper, but how else do I identify an actor?
@@ -13,10 +21,6 @@ module Actor{
                     (List Ide) # set of linked actors, TODO: Change it to a set...
                     Flag
                 )|(TerminatedActor (List Ide))  # list of linked actors
-    datatype Signal := (msg Value) | (exit Value Flag) | link | unlink 
-    datatype Action := (send Ide Ide Signal) | (rec Value) | (self Ide) | 
-                       (arr Ide Ide Signal) | (spawn Ide Expression Expression) | 
-                       sequential | termination | Flag
 
     define [frameStack expression mailbox linkedActors flag flag0 actorIde actorIdeTo actorIdeFrom value]
             :=
@@ -32,6 +36,8 @@ module Actor{
                 ?actorIdeFrom:    Ide
                 ?value:           Value
             ] 
+    # TODO: This function reduce defines the 'arrow' in the paper
+    declare reduce : [(Cfg Actor)] -> (Cfg Actor) 
     ############################################################## Process local semantics
     define exit'      := (exit value flag0)
     define msg'       := (msg value)
@@ -39,6 +45,9 @@ module Actor{
     define arr-exit'  := (arr actorIdeFrom actorIdeTo exit')
     define arr-link'  := (arr actorIdeFrom actorIdeTo link)
     define actor'   := (LiveActor actorIdeTo frameStack expression mailbox linkedActors flag)
+    # TODO: Why this and not just a definition of the reduce? Because ArrReduction should
+    # eventually used by reduce 🤔. I THINK THAT YOU SHOULD DO THAT, FIRST THINK TO DO
+    # TOMORROW MORNING: Ask Nicolas!
     declare ArrReduction : [Actor Action] -> Actor
     assert* arr-msg :=  (
                             (ArrReduction actor' arr-msg') 
@@ -57,7 +66,7 @@ module Actor{
                             (
                                 (not (actorIdeFrom = actorIdeTo)) &
                                 (flag = ff) &
-                                (value = normal) & 
+                                (value = NORMAL) & 
                                 (
                                     (ArrReduction actor' arr-exit')
                                     =
@@ -93,5 +102,7 @@ module Actor{
                         )
     
     # TODO: UnlinkArr, to achieve this I need to implement the rem operation
+
+    ############################################################## Process-local semantics
 
 }
