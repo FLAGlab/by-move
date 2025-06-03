@@ -1,7 +1,10 @@
 load "list-of.ath"
 load "config.ath"
 module Actor{
+    open Cfg
     open List
+
+    ##################################################################### Sort definitions 
     domains Expression, Value, Flag
     declare NORMAL, KILL, EXIT: Value
     declare ff, tt: Flag
@@ -12,17 +15,18 @@ module Actor{
     datatype Action := (send Ide Ide Signal) | (rec Value) | (self Ide) | 
                        (arr Ide Ide Signal) | (spawn Ide Expression Expression) | 
                        sequential | termination | Flag
-    datatype Actor 
-             := (LiveActor
-                    Ide # actor name, this is no in the paper, but how else do I identify an actor?
-                    FrameStack
-                    Expression
-                    (List Value) # mailbox TODO: Change to list of messages
-                    (List Ide) # set of linked actors, TODO: Change it to a set...
-                    Flag
-                )|(TerminatedActor (List Ide))  # list of linked actors
+    datatype Actor := (LiveActor Ide FrameStack Expression (List Value) (List Ide) Flag)
+                     |(TerminatedActor (List Ide))  
 
-    define [frameStack expression mailbox linkedActors flag flag0 actorIde actorIdeTo actorIdeFrom value]
+
+    # THIS IS QUIET IMPORTANT! Notice how I achieve to define the datatype Actor || Action
+    # To do so I had to introduce two constructors: Actor/1 and Action/1. I mean it kinda
+    # makes sense but at the same time it does not.
+    datatype ConfigElement := (Actor Actor) | (Action Action)
+
+    ################################################################ Variables definitions 
+    define [frameStack expression mailbox linkedActors flag 
+            flag0 actorIde actorIdeTo actorIdeFrom value config config0]
             :=
             [
                 ?frameStack:      FrameStack
@@ -35,71 +39,70 @@ module Actor{
                 ?actorIdeTo:      Ide
                 ?actorIdeFrom:    Ide
                 ?value:           Value
+                ?config:          (Cfg ConfigElement) 
+                ?config0:         (Cfg ConfigElement) 
             ] 
-    # TODO: This function reduce defines the 'arrow' in the paper
-    declare reduce : [(Cfg Actor)] -> (Cfg Actor) 
+
+    # TODO: Give a documentation for reduce
+    # This function reduce defines the 'arrow' in the paper
+    declare reduce : [(Cfg ConfigElement)] -> (Cfg ConfigElement) 
+    # declare ArrReduction : [Actor Action] -> Actor
     ############################################################## Process local semantics
-    define exit'      := (exit value flag0)
-    define msg'       := (msg value)
-    define arr-msg'   := (arr actorIdeFrom actorIdeTo msg')
-    define arr-exit'  := (arr actorIdeFrom actorIdeTo exit')
-    define arr-link'  := (arr actorIdeFrom actorIdeTo link)
-    define actor'   := (LiveActor actorIdeTo frameStack expression mailbox linkedActors flag)
-    # TODO: Why this and not just a definition of the reduce? Because ArrReduction should
-    # eventually used by reduce 🤔. I THINK THAT YOU SHOULD DO THAT, FIRST THINK TO DO
-    # TOMORROW MORNING: Ask Nicolas!
-    declare ArrReduction : [Actor Action] -> Actor
-    assert* arr-msg :=  (
-                            (ArrReduction actor' arr-msg') 
+    ############################################################## Just Some abbreviations
+    define msg'           := (msg value)
+    define exit'          := (exit value flag0)
+    define arr-msg'       := (Action (arr actorIdeFrom actorIdeTo msg'))
+    define arr-exit'      := (Action (arr actorIdeFrom actorIdeTo exit')) 
+    define arr-link'      := (Action (arr actorIdeFrom actorIdeTo link)) 
+    define actor'         := (Actor (LiveActor actorIdeTo frameStack expression mailbox linkedActors flag))
+    define arr-msg-actor' := (Actor (LiveActor actorIdeTo frameStack expression (mailbox ++ [value]) linkedActors flag))
+    ###################################################################################### 
+    assert* reduce-arr := 
+                        (
+                            (reduce 
+                                (cg config (cg (One actor') (One arr-msg')))
+                            )
                             = 
-                            (
-                                LiveActor 
-                                    actorIdeTo
-                                    frameStack
-                                    expression
-                                    (mailbox ++ [value])
-                                    linkedActors
-                                    flag
-                            ) 
+                            (cg config (One arr-msg-actor'))
                         )
-    assert* arr-exit-drop-0 := 
-                            (
-                                (not (actorIdeFrom = actorIdeTo)) &
-                                (flag = ff) &
-                                (value = NORMAL) & 
-                                (
-                                    (ArrReduction actor' arr-exit')
-                                    =
-                                    actor'
-                                )
-                            )
+    # assert* arr-exit-drop-0 := 
+    #                         (
+    #                             (not (actorIdeFrom = actorIdeTo)) &
+    #                             (flag = ff) &
+    #                             (value = NORMAL) & 
+    #                             (
+    #                                 (ArrReduction actor' arr-exit')
+    #                                 =
+    #                                 actor'
+    #                             )
+    #                         )
 
-    assert* arr-exit-drop-1 :=
-                            (
-                                (not (actorIdeFrom = actorIdeTo)) &
-                                (not (actorIdeFrom in linkedActors)) &
-                                (flag = ff) &
-                                (
-                                    (ArrReduction actor' arr-exit')
-                                    =
-                                    actor'
-                                )
-                            )
-    # TODO: ExitTerm and ExitConv rule page 12
+    # assert* arr-exit-drop-1 :=
+    #                         (
+    #                             (not (actorIdeFrom = actorIdeTo)) &
+    #                             (not (actorIdeFrom in linkedActors)) &
+    #                             (flag = ff) &
+    #                             (
+    #                                 (ArrReduction actor' arr-exit')
+    #                                 =
+    #                                 actor'
+    #                             )
+    #                         )
+    # # TODO: ExitTerm and ExitConv rule page 12
 
-    assert* arr-link := ( 
-                            (ArrReduction actor' arr-link')
-                            =
-                            (
-                                LiveActor 
-                                    actorIdeTo
-                                    frameStack
-                                    expression
-                                    mailbox
-                                    ( actorIdeFrom :: linkedActors )
-                                    flag
-                            ) 
-                        )
+    # assert* arr-link := ( 
+    #                         (ArrReduction actor' arr-link')
+    #                         =
+    #                         (
+    #                             LiveActor 
+    #                                 actorIdeTo
+    #                                 frameStack
+    #                                 expression
+    #                                 mailbox
+    #                                 ( actorIdeFrom :: linkedActors )
+    #                                 flag
+    #                         ) 
+    #                     )
     
     # TODO: UnlinkArr, to achieve this I need to implement the rem operation
 
