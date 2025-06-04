@@ -6,11 +6,11 @@ module Actor{
 
     ##################################################################### Sort definitions 
     domains Expression, Flag
-    declare NORMAL, KILL, EXIT, TRUE, OK, IDE, IDE0, IDE1, IDE2: Expression 
+    declare NORMAL, KILL, EXIT, TRUE, OK, IDE, IDETO, IDEFROM : Expression 
     declare ff, tt: Flag
     
     # TODO: FrameStack incomplete definition, just define the needed for Figure.3.Pag.13 
-    datatype FrameStack := (bang' Ide) | (exit' Ide) | link' | unlink'
+    datatype FrameStack := (bang' Expression) | (exit' Expression) | link' | unlink'
     # TODO: The definition of signals is over values (Pag.4) here the definition is over
     #       expressions, that is because the second field of an actor is an expression
     #       but when defining Send (Pag.13) they are assuming that there is a value in 
@@ -18,13 +18,13 @@ module Actor{
     # TEMPORALLY THERE IS NOT GOING TO EXIT THE VALUE SORT EXPRESSION IS GOING TO 
     # ENCAPSULATE ALL SUCH BEHAVIOR PROBABLY AT THIS MOMENT I DO NOT NEED SUCH GRANULARITY. 
     datatype Signal := (msg Expression) | (exit Expression Flag) | link | unlink 
-    datatype Action := (send Ide Ide Signal) | (rec Expression) | (self Ide) | 
-                       (arr Ide Ide Signal) | (spawn Ide Expression Expression) | 
+    datatype Action := (send Expression Expression Signal) | (rec Expression) | (self Expression) | 
+                       (arr Expression Expression Signal) | (spawn Expression Expression Expression) | 
                        sequential | termination | Flag
     # TODO: To define link (Pag.13) I need to have Ide < Expression. As right now, I don't
     #       how to achieve that. The temporally solution is to define, fixed process IDEs
     #       and use them as expressions. 
-    datatype Actor := (LiveActor Ide (List FrameStack) Expression (List Expression) (List Ide) Flag)
+    datatype Actor := (LiveActor Expression (List FrameStack) Expression (List Expression) (List Expression) Flag)
                      |(TerminatedActor (List Expression))  
 
 
@@ -35,18 +35,15 @@ module Actor{
 
     ################################################################ Variables definitions 
     define [frameStackList expression mailbox linkedActors flag 
-            flag0 actorIde actorIdeTo actorIdeFrom expression0 config config0]
+            flag0 expression0 config config0]
             :=
             [
                 ?frameStackList:  (List FrameStack) 
                 ?expression:      Expression
                 ?mailbox:         (List Expression)
-                ?linkedActors:    (List Ide)
+                ?linkedActors:    (List Expression)
                 ?flag:            Flag
                 ?flag0:           Flag
-                ?actorIde:        Ide
-                ?actorIdeTo:      Ide
-                ?actorIdeFrom:    Ide
                 ?expression0:     Expression
                 ?config:          (Cfg ConfigElement) 
                 ?config0:         (Cfg ConfigElement) 
@@ -58,30 +55,31 @@ module Actor{
     # declare ArrReduction : [Actor Action] -> Actor
     ############################################################## Process local semantics
     ############################################################## Just Some abbreviations
-    define exit^          := (exit' actorIde)
+    define exit^          := (exit' IDE)
     define msg^           := (msg expression0)
-    define bang^          := (bang' actorIdeTo)
+    define bang^          := (bang' IDETO)
     define ff-exit^       := (exit expression ff)
     define flag-exit^     := (exit expression0 flag0)
-    define arr-msg^       := (Action (arr actorIdeFrom actorIdeTo msg^))
-    define arr-link^      := (Action (arr actorIdeFrom actorIdeTo link)) 
-    define arr-exit^      := (Action (arr actorIdeFrom actorIdeTo flag-exit^)) 
-    define send-msg^      := (Action (send actorIdeFrom actorIdeTo msg^))
-    define send-msg-exit^ := (Action (send actorIdeFrom actorIdeTo ff-exit^))
-    define actor^         := (Actor (LiveActor actorIdeTo frameStackList expression mailbox linkedActors flag))
-    define true-actor^    := (Actor (LiveActor actorIdeTo frameStackList TRUE mailbox linkedActors flag))
-    define send-actor^    := (Actor (LiveActor actorIdeTo (bang^ :: frameStackList) expression mailbox linkedActors flag))
-    define exit-actor^    := (Actor (LiveActor actorIdeTo (exit^ :: frameStackList) expression mailbox linkedActors flag))
-    define link-actor^    := (Actor (LiveActor actorIdeTo (link' :: frameStackList) expression mailbox linkedActors flag))
-    define arr-msg-actor^ := (Actor (LiveActor actorIdeTo frameStackList expression (mailbox ++ [expression0]) linkedActors flag))
-    define arr-link-actor^:= (Actor (LiveActor actorIdeTo frameStackList expression mailbox ( actorIdeFrom :: linkedActors ) flag))
+    define arr-msg^       := (Action (arr IDEFROM IDETO msg^))
+    define arr-link^      := (Action (arr IDEFROM IDETO link)) 
+    define arr-exit^      := (Action (arr IDEFROM IDETO flag-exit^)) 
+    define send-msg^      := (Action (send IDEFROM IDETO msg^))
+    define send-msg-exit^ := (Action (send IDEFROM IDETO ff-exit^))
+    define true-actor^    := (Actor (LiveActor IDEFROM frameStackList TRUE mailbox linkedActors flag))
+    define to-actor^      := (Actor (LiveActor IDETO frameStackList expression mailbox linkedActors flag))
+    define actor^         := (Actor (LiveActor IDEFROM frameStackList expression mailbox linkedActors flag))
+    define send-actor^    := (Actor (LiveActor IDEFROM (bang^ :: frameStackList) expression mailbox linkedActors flag))
+    define exit-actor^    := (Actor (LiveActor IDEFROM (exit^ :: frameStackList) expression mailbox linkedActors flag))
+    define link-actor^    := (Actor (LiveActor IDEFROM (link' :: frameStackList) expression mailbox linkedActors flag))
+    define arr-link-actor^:= (Actor (LiveActor IDETO frameStackList expression mailbox ( IDEFROM :: linkedActors ) flag))
+    define arr-msg-actor^ := (Actor (LiveActor IDEFROM frameStackList expression (mailbox ++ [expression0]) linkedActors flag))
     define reduce-drop-exit^ :=
                             (
                                 (reduce 
-                                    (cg config (cg (One actor^) (One arr-exit^)))
+                                    (cg config (cg (One to-actor^) (One arr-exit^)))
                                 )
                                 =
-                                (cg config (One actor^))
+                                (cg config (One to-actor^))
                             )
     ###################################################################################### 
     # TODO: Define all the assert for reduce inside just one fun as in RAFT
@@ -100,7 +98,7 @@ module Actor{
     # need them.
     assert* reduce-arr-exit-drop-0 := 
                             (
-                                ((not (actorIdeFrom = actorIdeTo)) &
+                                ((not (IDEFROM = IDETO)) &
                                 (flag = ff) &
                                 (expression0 = NORMAL)) 
                                 ==>
@@ -109,8 +107,8 @@ module Actor{
     assert* reduce-arr-exit-drop-1 :=
                             (
                                 (
-                                (not (actorIdeFrom = actorIdeTo)) &
-                                (not (actorIdeFrom in linkedActors)) &
+                                (not (IDEFROM = IDETO)) &
+                                (not (IDEFROM in linkedActors)) &
                                 (flag = ff) 
                                 ) 
                                 ==>
@@ -121,7 +119,7 @@ module Actor{
     assert* reduce-arr-link := 
                         ( 
                             (reduce 
-                                (cg config (cg (One actor^) (One arr-link^)))
+                                (cg config (cg (One to-actor^) (One arr-link^)))
                             )
                             # (ArrReduction actor^ arr-link^)
                             =
@@ -159,7 +157,21 @@ module Actor{
                                 )
                             )
                            )
-    
-    # TODO: There is a problem, 
 
+    assert* reduce-exit := (
+                            (reduce
+                                (cg config (One exit-actor^))
+                            )
+                            =
+                            (cg
+                                config
+                                (cg
+                                    (One true-actor^)
+                                    (One send-msg-exit^)
+                                )
+                            )
+                           )
+                        
+    
+    # TODO: check if I can documentate using github issued
 }
