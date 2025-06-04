@@ -1,4 +1,4 @@
-load "list-of.ath"
+load "list_of.ath"
 load "config.ath"
 module Actor{
     open Cfg
@@ -58,55 +58,55 @@ module Actor{
     define exit^           := (exit' IDE)
     define msg^            := (msg expression0)
     define bang^           := (bang' IDETO)
-    define ff-exit^        := (exit expression ff)
-    define flag-exit^      := (exit expression0 flag0)
-    define arr-msg^        := (Action (arr IDEFROM IDETO msg^))
-    define arr-link^       := (Action (arr IDEFROM IDETO link)) 
-    define arr-exit^       := (Action (arr IDEFROM IDETO flag-exit^)) 
-    define send-msg^       := (Action (send IDEFROM IDETO msg^))
-    define send-link-msg^  := (Action (send IDEFROM IDETO link))
-    define send-msg-exit^  := (Action (send IDEFROM IDETO ff-exit^))
-    define true-actor^     := (Actor (LiveActor IDEFROM frameStackList TRUE mailbox linkedActors flag))
-    define to-actor^       := (Actor (LiveActor IDETO frameStackList expression mailbox linkedActors flag))
+    define ff_exit^        := (exit expression ff)
+    define flag_exit^      := (exit expression0 flag0)
+    define arr_msg^        := (Action (arr IDEFROM IDETO msg^))
+    define arr_link^       := (Action (arr IDEFROM IDETO link)) 
+    define arr_exit^       := (Action (arr IDEFROM IDETO flag_exit^)) 
+    define send_msg^       := (Action (send IDEFROM IDETO msg^))
+    define send_link_msg^  := (Action (send IDEFROM IDETO link))
+    define send_msg_exit^  := (Action (send IDEFROM IDETO ff_exit^))
+    define true_actor^     := (Actor (LiveActor IDEFROM frameStackList TRUE mailbox linkedActors flag))
+    define to_actor^       := (Actor (LiveActor IDETO frameStackList expression mailbox linkedActors flag))
     define actor^          := (Actor (LiveActor IDEFROM frameStackList expression mailbox linkedActors flag))
-    define send-actor^     := (Actor (LiveActor IDEFROM (bang^ :: frameStackList) expression mailbox linkedActors flag))
-    define exit-actor^     := (Actor (LiveActor IDEFROM (exit^ :: frameStackList) expression mailbox linkedActors flag))
-    define arr-link-actor^ := (Actor (LiveActor IDETO frameStackList expression mailbox ( IDEFROM :: linkedActors ) flag))
-    define send-link-actor^:= (Actor (LiveActor IDEFROM (link' :: frameStackList) IDETO mailbox linkedActors flag))
-    define ok-actor^       := (Actor (LiveActor IDEFROM frameStackList TRUE mailbox ( IDETO :: linkedActors ) flag))
-    define arr-msg-actor^  := (Actor (LiveActor IDEFROM frameStackList expression (mailbox ++ [expression0]) linkedActors flag))
-    define reduce-drop-exit^ :=
+    define send_actor^     := (Actor (LiveActor IDEFROM (bang^ :: frameStackList) expression mailbox linkedActors flag))
+    define exit_actor^     := (Actor (LiveActor IDEFROM (exit^ :: frameStackList) expression mailbox linkedActors flag))
+    define arr_link_actor^ := (Actor (LiveActor IDETO frameStackList expression mailbox ( IDEFROM :: linkedActors ) flag))
+    define send_link_actor^:= (Actor (LiveActor IDEFROM (link' :: frameStackList) IDETO mailbox linkedActors flag))
+    define ok_actor^       := (Actor (LiveActor IDEFROM frameStackList TRUE mailbox ( IDETO :: linkedActors ) flag))
+    define arr_msg_actor^  := (Actor (LiveActor IDEFROM frameStackList expression (mailbox ++ [expression0]) linkedActors flag))
+    define reduce_drop_exit^ :=
                             (
                                 (reduce 
-                                    (cg config (cg (One to-actor^) (One arr-exit^)))
+                                    (cg config (cg (One to_actor^) (One arr_exit^)))
                                 )
                                 =
-                                (cg config (One to-actor^))
+                                (cg config (One to_actor^))
                             )
     ###################################################################################### 
     # TODO: Define all the assert for reduce inside just one fun as in RAFT
-    #       reduce-null is not presented in the paper, just for completeness.
-    assert* reduce-null := (reduce Null = Null)
-    assert* reduce-arr-msg := 
+    #       reduce_null is not presented in the paper, just for completeness.
+    assert* reduce_null := (reduce Null = Null)
+    assert* reduce_arr_msg := 
                         (
                             (reduce 
-                                (cg config (cg (One actor^) (One arr-msg^)))
+                                (cg config (cg (One actor^) (One arr_msg^)))
                             )
                             = 
-                            (cg config (One arr-msg-actor^))
+                            (cg config (One arr_msg_actor^))
                         )
-    # The paper presents arr-exit-drop-0 and 1 as just one reduction rule, but I think
+    # The paper presents arr_exit_drop_0 and 1 as just one reduction rule, but I think
     # that it is better to have it a two separate rules, thinking on proofs that might
     # need them.
-    assert* reduce-arr-exit-drop-0 := 
+    assert* reduce_arr_exit_drop_0 := 
                             (
                                 ((not (IDEFROM = IDETO)) &
                                 (flag = ff) &
                                 (expression0 = NORMAL)) 
                                 ==>
-                                reduce-drop-exit^
+                                reduce_drop_exit^
                             )
-    assert* reduce-arr-exit-drop-1 :=
+    assert* reduce_arr_exit_drop_1 :=
                             (
                                 (
                                 (not (IDEFROM = IDETO)) &
@@ -114,62 +114,62 @@ module Actor{
                                 (flag = ff) 
                                 ) 
                                 ==>
-                                reduce-drop-exit^
+                                reduce_drop_exit^
                             )
     # TODO: ExitTerm and ExitConv rule page 12
 
-    assert* reduce-arr-link := 
+    assert* reduce_arr_link := 
                         ( 
                             (reduce 
-                                (cg config (cg (One to-actor^) (One arr-link^)))
+                                (cg config (cg (One to_actor^) (One arr_link^)))
                             )
-                            # (ArrReduction actor^ arr-link^)
+                            # (ArrReduction actor^ arr_link^)
                             =
-                            (One arr-link-actor^) 
+                            (One arr_link_actor^) 
                         )
     
     # TODO: UnlinkArr, to achieve this I need to implement the rem operation
 
-    ############################################################## Process-local semantics
+    ############################################################## Process_local semantics
 
-    assert* reduce-send := (
+    assert* reduce_send := (
                             (reduce
-                                (cg config (One send-actor^))
+                                (cg config (One send_actor^))
                             )
                             =
                             (cg
                                 config
                                 (cg
                                     (One actor^)
-                                    (One send-msg^)
+                                    (One send_msg^)
                                 )
                             )
                           )
 
-    assert* reduce-send-exit := (
+    assert* reduce_send_exit := (
                             (reduce
-                                (cg config (One exit-actor^))
+                                (cg config (One exit_actor^))
                             )
                             =
                             (cg
                                 config
                                 (cg
-                                    (One true-actor^)
-                                    (One send-msg-exit^)
+                                    (One true_actor^)
+                                    (One send_msg_exit^)
                                 )
                             )
                            )
 
-    assert* reduce-send-link := (
+    assert* reduce_send_link := (
                             (reduce
-                                (cg config (One send-link-actor^))
+                                (cg config (One send_link_actor^))
                             )
                             =
                             (cg
                                 config
                                 (cg
-                                    (One ok-actor^)
-                                    (One send-link-msg^)
+                                    (One ok_actor^)
+                                    (One send_link_msg^)
                                 )
                             )
                            )
