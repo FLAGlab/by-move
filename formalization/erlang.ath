@@ -1,4 +1,4 @@
-load "list_of.ath"
+load "list-of.ath"
 load "config.ath"
 module Actor{
     open Cfg
@@ -10,7 +10,7 @@ module Actor{
     declare ff, tt: Flag
     
     # TODO: FrameStack incomplete definition, just define the needed for Figure.3.Pag.13 
-    datatype FrameStack := (bang' Expression) | (exit' Expression) | link' | unlink'
+    datatype FrameStack := (bang' Expression) | (exit' Expression) | (frame' Expression) | link' | unlink'
     # TODO: The definition of signals is over values (Pag.4) here the definition is over
     #       expressions, that is because the second field of an actor is an expression
     #       but when defining Send (Pag.13) they are assuming that there is a value in 
@@ -24,6 +24,7 @@ module Actor{
     # TODO: To define link (Pag.13) I need to have Ide < Expression. As right now, I don't
     #       how to achieve that. The temporally solution is to define, fixed process IDEs
     #       and use them as expressions. 
+    # Stack, Expression, Mailbox, LinkedActors, Flag
     datatype Actor := (LiveActor Expression (List FrameStack) Expression (List Expression) (List Expression) Flag)
                      |(TerminatedActor (List Expression))  
 
@@ -34,19 +35,24 @@ module Actor{
     datatype ConfigElement := (Actor Actor) | (Action Action)
 
     ################################################################ Variables definitions 
-    define [frameStackList expression mailbox linkedActors flag 
-            flag0 expression0 config config0]
+    define [frameStackList frameStackList0 expression mailbox linkedActors linkedActors0 linkedActors1 flag 
+            flag0 expression0 config config0 actorIdeLink actorIde]
             :=
             [
                 ?frameStackList:  (List FrameStack) 
+                ?frameStackList0:  (List FrameStack) 
                 ?expression:      Expression
                 ?mailbox:         (List Expression)
                 ?linkedActors:    (List Expression)
+                ?linkedActors0:   (List Expression)
+                ?linkedActors1:   (List Expression)
                 ?flag:            Flag
                 ?flag0:           Flag
                 ?expression0:     Expression
                 ?config:          (Cfg ConfigElement) 
                 ?config0:         (Cfg ConfigElement) 
+                ?actorIdeLink:    Expression
+                ?actorIde:        Expression
             ] 
 
     # TODO: Give a documentation for reduce

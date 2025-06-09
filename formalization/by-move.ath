@@ -1,0 +1,102 @@
+load "erlang.ath"
+module ByMove {
+    open Actor
+    # TODO: F and F0 are functions, but this is not the best way to define this.
+    #       This should be fixed when defining the whole syntaxis/semantics for
+    #       expressions.
+    declare F : Expression
+    # requiere(actorIde, Functions)
+    declare requiere: [Expression Expression] -> Expression
+    declare reduce_requiring: [Actor Actor (Cfg ConfigElement)] -> (Cfg ConfigElement) 
+
+
+    define [frameStackList0 frameStackList1] := 
+        [
+            ?frameStackList0: (List FrameStack)
+            ?frameStackList1: (List FrameStack)
+        ]
+
+    # Si un nodo quiere una funcion eventualmente la podrá usar 
+    define requiring_actor := (LiveActor 
+                                    actorIde 
+                                    ((frame' (requiere actorIde F)) :: frameStackList)
+                                    expression
+                                    mailbox
+                                    linkedActors
+                                    flag
+                              )
+
+    define required_actor := (LiveActor 
+                                    actorIde 
+                                    frameStackList0
+                                    (requiere actorIde F)
+                                    mailbox
+                                    linkedActors 
+                                    flag
+                              )
+
+    define recursive_actor := (LiveActor 
+                                    actorIde 
+                                    frameStackList0
+                                    expression
+                                    mailbox
+                                    linkedActors0
+                                    flag
+                              )
+
+    define recursive_actor_after := (LiveActor 
+                                        actorIde 
+                                        ((bang' actorIdeLink) :: frameStackList0)
+                                        expression
+                                        mailbox
+                                        linkedActors1
+                                        flag
+                                    )
+
+
+    assert* reduce_requiring_definition_base := 
+        (
+            (linkedActors0 = nil)
+            ==>
+            (
+                (reduce_requiring requiring_actor recursive_actor config0)
+                =
+                (cg config0 (One (Actor required_actor)) ) 
+            )
+        )
+
+    assert* reduce_requiring_definition_recursive := 
+        (
+            (linkedActors0 = (actorIdeLink :: linkedActors1))
+            ==>
+            (
+                (reduce_requiring requiring_actor recursive_actor config0)
+                =
+                (reduce_requiring requiring_actor recursive_actor_after config0)
+            )
+        )
+
+
+    assert* reduce_requiere := 
+                            (
+                                (reduce cg config (One (Actor requiring_actor))) 
+                                =
+                                (cg config (reduce_requiring requiring_actor requiring_actor Null))
+                            )
+
+    define owner_actor     := (LiveActor 
+                                    actorIde 
+                                    (frameStackList0 ++ [(frame' F)] ++ frameStackList1) 
+                                    expression
+                                    mailbox
+                                    linkedActors
+                                    flag
+                              )
+
+    # la funciones existen máximo 1 vex en la red
+
+}
+
+
+
+
