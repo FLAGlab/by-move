@@ -7,7 +7,9 @@ module ByMove {
     declare F : Expression
     # requiere(actorIde, Functions)
     declare requiere: [Expression Expression] -> Expression
-    declare reduce_requiring: [Actor Actor (Cfg ConfigElement)] -> (Cfg ConfigElement) 
+    # response_requiere(actorIde, Functions)
+    declare response_requiere: [Expression Expression] -> Expression
+    declare requiring: [Actor Actor (Cfg ConfigElement)] -> (Cfg ConfigElement) 
 
 
     define [frameStackList0 frameStackList1] := 
@@ -17,81 +19,106 @@ module ByMove {
         ]
 
     # Si un nodo quiere una funcion eventualmente la podrá usar 
-    define requiring_actor := (LiveActor 
-                                    actorIde 
-                                    ((frame' (requiere actorIde F)) :: frameStackList)
-                                    expression
-                                    mailbox
-                                    linkedActors
-                                    flag
-                              )
+    ############################################### Semantics when an actor is requiring F
+    ### In this case requiring reversibly adds ! to the frameStackList, as many
+    ### as likedActors linked to such  LiveActor.
+    define requiring_actor := 
+        (LiveActor 
+            actorIde 
+            ((frame' (requiere actorIde F)) :: frameStackList)
+            expression
+            mailbox
+            linkedActors
+            flag
+        )
 
-    define required_actor := (LiveActor 
-                                    actorIde 
-                                    frameStackList0
-                                    (requiere actorIde F)
-                                    mailbox
-                                    linkedActors 
-                                    flag
-                              )
+    define required_actor := 
+        (LiveActor 
+            actorIde 
+            frameStackList0
+            (requiere actorIde F)
+            mailbox
+            linkedActors 
+            flag
+        )
 
-    define recursive_actor := (LiveActor 
-                                    actorIde 
-                                    frameStackList0
-                                    expression
-                                    mailbox
-                                    linkedActors0
-                                    flag
-                              )
+    define recursive_actor := 
+        (LiveActor 
+            actorIde 
+            frameStackList0
+            expression
+            mailbox
+            linkedActors0
+            flag
+        )
 
-    define recursive_actor_after := (LiveActor 
-                                        actorIde 
-                                        ((bang' actorIdeLink) :: frameStackList0)
-                                        expression
-                                        mailbox
-                                        linkedActors1
-                                        flag
-                                    )
+    define recursive_actor_after := 
+        (LiveActor 
+            actorIde 
+            ((bang' actorIdeLink) :: frameStackList0)
+            expression
+            mailbox
+            linkedActors1
+            flag
+        )
 
 
-    assert* reduce_requiring_definition_base := 
+    assert* requiring_definition_base := 
         (
             (linkedActors0 = nil)
             ==>
             (
-                (reduce_requiring requiring_actor recursive_actor config0)
+                (requiring requiring_actor recursive_actor config0)
                 =
                 (cg config0 (One (Actor required_actor)) ) 
             )
         )
 
-    assert* reduce_requiring_definition_recursive := 
+    assert* requiring_definition_recursive := 
         (
             (linkedActors0 = (actorIdeLink :: linkedActors1))
             ==>
             (
-                (reduce_requiring requiring_actor recursive_actor config0)
+                (requiring requiring_actor recursive_actor config0)
                 =
-                (reduce_requiring requiring_actor recursive_actor_after config0)
+                (requiring requiring_actor recursive_actor_after config0)
             )
         )
 
-
+    # TODO: the config (Null) in requiring is never used
     assert* reduce_requiere := 
-                            (
-                                (reduce cg config (One (Actor requiring_actor))) 
-                                =
-                                (cg config (reduce_requiring requiring_actor requiring_actor Null))
-                            )
+        (
+            (reduce (cg config (One (Actor requiring_actor))))
+            =
+            (cg config (requiring requiring_actor requiring_actor Null))
+        )
 
-    define owner_actor     := (LiveActor 
-                                    actorIde 
-                                    (frameStackList0 ++ [(frame' F)] ++ frameStackList1) 
-                                    expression
-                                    mailbox
-                                    linkedActors
-                                    flag
-                              )
+    define owner_actor     := 
+        (LiveActor 
+            actorIdeLink
+            (frameStackList0 ++ [(frame' F)] ++ frameStackList1) 
+            expression
+            ((requiere actorIde F) :: mailbox) 
+            linkedActors
+            flag
+        )
+
+    define surrender_actor     := 
+        (LiveActor 
+            actorIdeLink
+            ((bang' actorIde) :: (frameStackList0 ++ frameStackList1))
+            (response_requiere actorIde F) 
+            mailbox
+            linkedActors
+            flag
+        )
+
+    assert* reduce_response_requiring :=
+        (
+            (reduce (cg config (One (Actor owner_actor))))
+            =
+            (cg config (One Actor surrender_actor))
+        )
 
     # la funciones existen máximo 1 vex en la red
 
