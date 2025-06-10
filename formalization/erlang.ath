@@ -78,16 +78,17 @@ module Actor{
     #       theory, this give automatically --> all the properties instead of having
     #       to assert them.
 
-    declare -->, -*> : [(Cfg ConfigElement) (Cfg ConfigElement)] ->  Boolean
-    declare -n>: [N (Cfg ConfigElement) (Cfg ConfigElement)] -> Boolean
+    declare -->, -*> : [(Cfg ConfigElement) (Cfg ConfigElement)]   ->  Boolean
+    declare -n>:       [N (Cfg ConfigElement) (Cfg ConfigElement)] -> Boolean
+
     define [x y z y' m n] := 
         [
-        ?x:(Cfg ConfigElement)
-        ?y:(Cfg ConfigElement)
-        ?z:(Cfg ConfigElement)
-        ?y':(Cfg ConfigElement)
-        ?m:N
-        ?n:N
+            ?x:(Cfg ConfigElement)
+            ?y:(Cfg ConfigElement)
+            ?z:(Cfg ConfigElement)
+            ?y':(Cfg ConfigElement)
+            ?m:N
+            ?n:N
         ]
 
     assert -n>-zero := 

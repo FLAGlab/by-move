@@ -8,12 +8,14 @@ module ByMove {
     # requiere(actorIde, Functions)
     declare requiere: [Expression Expression] -> Expression
     # response_requiere(actorIde, Functions)
-    declare response_requiere: [Expression Expression] -> Expression
-    declare requiring: [Actor Actor (Cfg ConfigElement)] -> (Cfg ConfigElement) 
+    declare requiring:         [Actor Actor (Cfg ConfigElement)] -> (Cfg ConfigElement) 
+    declare response_requiere: [Expression Expression]           -> Expression
 
 
-    define [frameStackList0 frameStackList1] := 
+    define [linkedActors0 linkedActors1 frameStackList0 frameStackList1] := 
         [
+            ?linkedActors0:  (List Expression)
+            ?linkedActors1:  (List Expression)
             ?frameStackList0: (List FrameStack)
             ?frameStackList1: (List FrameStack)
         ]
@@ -69,7 +71,7 @@ module ByMove {
             (
                 (requiring requiring_actor recursive_actor config)
                 =
-                (cg config (One (Actor required_actor)) ) 
+                (cg config (One (Actor required_actor))) 
             )
         )
 
@@ -87,8 +89,8 @@ module ByMove {
     # TODO: the config (Null) in requiring is never used
     assert* reduce_requiere := 
         (
-            (reduce (cg config (One (Actor requiring_actor))))
-            =
+            (cg config (One (Actor requiring_actor)))
+            -->
             (cg config (requiring requiring_actor requiring_actor Null))
         )
 
@@ -114,18 +116,18 @@ module ByMove {
 
     assert* reduce_response_requiring :=
         (
-            (reduce (cg config (One (Actor owner_actor))))
-            =
+            (cg config (One (Actor owner_actor)))
+            -->
             (cg config (One Actor surrender_actor))
         )
 
-    # Si un nodo quiere una funcion eventualmente la podrá usar 
-    define eventual_ownership :=
-        (
-            (reduce )
-        )
+    # # Si un nodo quiere una funcion eventualmente la podrá usar 
+    # define eventual_ownership :=
+    #     (
+    #         (reduce )
+    #     )
 
-    # la funciones existen máximo 1 vex en la red
+    # # la funciones existen máximo 1 vex en la red
 
 }
 
