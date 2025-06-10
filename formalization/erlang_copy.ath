@@ -1,0 +1,189 @@
+load "list-of.ath"
+load "config.ath"
+module Actor{
+    open Cfg
+    open List
+
+    ##################################################################### Sort definitions 
+    domains Expression, Flag
+    declare NORMAL, KILL, EXIT, TRUE, OK, IDE, IDETO, IDEFROM : Expression 
+    declare ff, tt: Flag
+    
+    # TODO: FrameStack incomplete definition, just define the needed for Figure.3.Pag.13 
+    datatype FrameStack := (bang' Expression) | (exit' Expression) | (frame' Expression) | link' | unlink'
+    # TODO: The definition of signals is over values (Pag.4) here the definition is over
+    #       expressions, that is because the second field of an actor is an expression
+    #       but when defining Send (Pag.13) they are assuming that there is a value in 
+    #       such expression.
+    # TEMPORALLY THERE IS NOT GOING TO EXIT THE VALUE SORT EXPRESSION IS GOING TO 
+    # ENCAPSULATE ALL SUCH BEHAVIOR PROBABLY AT THIS MOMENT I DO NOT NEED SUCH GRANULARITY. 
+    datatype Signal := (msg Expression) | (exit Expression Flag) | link | unlink 
+    datatype Action := (send Expression Expression Signal) | (rec Expression) | (self Expression) | 
+                       (arr Expression Expression Signal) | (spawn Expression Expression Expression) | 
+                       sequential | termination | Flag
+    # TODO: To define link (Pag.13) I need to have Ide < Expression. As right now, I don't
+    #       how to achieve that. The temporally solution is to define, fixed process IDEs
+    #       and use them as expressions. 
+    # Stack, Expression, Mailbox, LinkedActors, Flag
+    datatype Actor := (LiveActor Expression (List FrameStack) Expression (List Expression) (List Expression) Flag)
+                     |(TerminatedActor (List Expression))  
+
+
+    # THIS IS QUIET IMPORTANT! Notice how I achieve to define the datatype Actor || Action
+    # To do so I had to introduce two constructors: Actor/1 and Action/1. I mean it kinda
+    # makes sense but at the same time it does not.
+    datatype ConfigElement := (Actor Actor) | (Action Action)
+
+    ################################################################ Variables definitions 
+    define [frameStackList frameStackList0 expression mailbox linkedActors linkedActors0 linkedActors1 flag 
+            flag0 expression0 config config0 actorIdeLink actorIde]
+            :=
+            [
+                ?frameStackList:  (List FrameStack) 
+                ?frameStackList0:  (List FrameStack) 
+                ?expression:      Expression
+                ?mailbox:         (List Expression)
+                ?linkedActors:    (List Expression)
+                ?linkedActors0:   (List Expression)
+                ?linkedActors1:   (List Expression)
+                ?flag:            Flag
+                ?flag0:           Flag
+                ?expression0:     Expression
+                ?config:          (Cfg ConfigElement) 
+                ?config0:         (Cfg ConfigElement) 
+                ?actorIdeLink:    Expression
+                ?actorIde:        Expression
+            ] 
+
+    # TODO: Give a documentation for reduce
+    # This function reduce defines the 'arrow' in the paper
+    # declare reduce : [(Cfg ConfigElement)] -> (Cfg ConfigElement) 
+    declare --> : [(Cfg ConfigElement) (Cfg ConfigElement)] ->  Boolean
+    ############################################################## Process local semantics
+    ############################################################## Just Some abbreviations
+    define exit^           := (exit' IDE)
+    define msg^            := (msg expression0)
+    define bang^           := (bang' IDETO)
+    define ff_exit^        := (exit expression ff)
+    define flag_exit^      := (exit expression0 flag0)
+    define arr_msg^        := (Action (arr IDEFROM IDETO msg^))
+    define arr_link^       := (Action (arr IDEFROM IDETO link)) 
+    define arr_exit^       := (Action (arr IDEFROM IDETO flag_exit^)) 
+    define send_msg^       := (Action (send IDEFROM IDETO msg^))
+    define send_link_msg^  := (Action (send IDEFROM IDETO link))
+    define send_msg_exit^  := (Action (send IDEFROM IDETO ff_exit^))
+    define true_actor^     := (Actor (LiveActor IDEFROM frameStackList TRUE mailbox linkedActors flag))
+    define to_actor^       := (Actor (LiveActor IDETO frameStackList expression mailbox linkedActors flag))
+    define actor^          := (Actor (LiveActor IDEFROM frameStackList expression mailbox linkedActors flag))
+    define send_actor^     := (Actor (LiveActor IDEFROM (bang^ :: frameStackList) expression mailbox linkedActors flag))
+    define exit_actor^     := (Actor (LiveActor IDEFROM (exit^ :: frameStackList) expression mailbox linkedActors flag))
+    define arr_link_actor^ := (Actor (LiveActor IDETO frameStackList expression mailbox ( IDEFROM :: linkedActors ) flag))
+    define send_link_actor^:= (Actor (LiveActor IDEFROM (link' :: frameStackList) IDETO mailbox linkedActors flag))
+    define ok_actor^       := (Actor (LiveActor IDEFROM frameStackList TRUE mailbox ( IDETO :: linkedActors ) flag))
+    define arr_msg_actor^  := (Actor (LiveActor IDEFROM frameStackList expression (mailbox ++ [expression0]) linkedActors flag))
+    define reduce_drop_exit^ :=
+                            (
+                                (cg config (cg (One to_actor^) (One arr_exit^)))
+                                -->
+                                (cg config (One to_actor^))
+                            )
+    ###################################################################################### 
+    # TODO: Define all the assert for reduce inside just one fun as in RAFT
+    #       reduce_null is not presented in the paper, just for completeness.
+    assert* reduce_arr_msg := 
+                        (
+                            (cg config (cg (One to_actor^) (One arr_msg^)))
+                            -->
+                            (cg config (One arr_msg_actor^))
+                        )
+    # The paper presents arr_exit_drop_0 and 1 as just one reduction rule, but I think
+    # that it is better to have it a two separate rules, thinking on proofs that might
+    # need them.
+    assert* reduce_arr_exit_drop_0 := 
+                            (
+                                ((not (IDEFROM = IDETO)) &
+                                (flag = ff) &
+                                (expression0 = NORMAL)) 
+                                ==>
+                                reduce_drop_exit^
+                            )
+    assert* reduce_arr_exit_drop_1 :=
+                            (
+                                (
+                                (not (IDEFROM = IDETO)) &
+                                (not (IDEFROM in linkedActors)) &
+                                (flag = ff) 
+                                ) 
+                                ==>
+                                reduce_drop_exit^
+                            )
+#     # TODO: ExitTerm and ExitConv rule page 12
+
+    assert* reduce_arr_link := 
+                        ( 
+                            (reduce 
+                                (cg config (cg (One to_actor^) (One arr_link^)))
+                            )
+                            =
+                            (One arr_link_actor^) 
+                        )
+    
+#     # TODO: UnlinkArr, to achieve this I need to implement the rem operation
+
+#     ############################################################## Process_local semantics
+
+#     assert* reduce_send := (
+#                             (reduce
+#                                 (cg config (One send_actor^))
+#                             )
+#                             =
+#                             (cg
+#                                 config
+#                                 (cg
+#                                     (One actor^)
+#                                     (One send_msg^)
+#                                 )
+#                             )
+#                           )
+
+#     assert* reduce_send_exit := (
+#                             (reduce
+#                                 (cg config (One exit_actor^))
+#                             )
+#                             =
+#                             (cg
+#                                 config
+#                                 (cg
+#                                     (One true_actor^)
+#                                     (One send_msg_exit^)
+#                                 )
+#                             )
+#                            )
+
+#     assert* reduce_send_link := (
+#                             (reduce
+#                                 (cg config (One send_link_actor^))
+#                             )
+#                             =
+#                             (cg
+#                                 config
+#                                 (cg
+#                                     (One ok_actor^)
+#                                     (One send_link_msg^)
+#                                 )
+#                             )
+#                            )
+
+#     # TODO: Pending definition of rule Unlink, I need to define rem/2 to define such rule    
+
+#     # ################################################################# Transitive reduction 
+
+#     # declare transitive_reduction : [(Cfg ConfigElement)] -> (Cfg ConfigElement) 
+#     # assert* transitive_reduction_def :=
+#     #     (
+#     #         ((transitive_reduction config) = (transitive_reduction(reduce config)))
+#     #     )
+
+
+
+}

@@ -18,7 +18,6 @@ module ByMove {
             ?frameStackList1: (List FrameStack)
         ]
 
-    # Si un nodo quiere una funcion eventualmente la podrá usar 
     ############################################### Semantics when an actor is requiring F
     ### In this case requiring reversibly adds ! to the frameStackList, as many
     ### as likedActors linked to such  LiveActor.
@@ -68,9 +67,9 @@ module ByMove {
             (linkedActors0 = nil)
             ==>
             (
-                (requiring requiring_actor recursive_actor config0)
+                (requiring requiring_actor recursive_actor config)
                 =
-                (cg config0 (One (Actor required_actor)) ) 
+                (cg config (One (Actor required_actor)) ) 
             )
         )
 
@@ -79,9 +78,9 @@ module ByMove {
             (linkedActors0 = (actorIdeLink :: linkedActors1))
             ==>
             (
-                (requiring requiring_actor recursive_actor config0)
+                (requiring requiring_actor recursive_actor config)
                 =
-                (requiring requiring_actor recursive_actor_after config0)
+                (requiring requiring_actor recursive_actor_after config)
             )
         )
 
@@ -118,6 +117,12 @@ module ByMove {
             (reduce (cg config (One (Actor owner_actor))))
             =
             (cg config (One Actor surrender_actor))
+        )
+
+    # Si un nodo quiere una funcion eventualmente la podrá usar 
+    define eventual_ownership :=
+        (
+            (reduce )
         )
 
     # la funciones existen máximo 1 vex en la red
