@@ -12,6 +12,7 @@ module ByMove {
     declare response_requiere: [Expression Expression]           -> Expression
 
 
+    ################################################################## Variable Definition
     define [config0 mailbox0 linkedActors0 linkedActors1 frameStackList0 frameStackList1] := 
         [
             ?config0:   (Cfg ConfigElement)
@@ -22,9 +23,8 @@ module ByMove {
             ?frameStackList1: (List FrameStack)
         ]
 
-    ############################################### Semantics when an actor is requiring F
-    ### In this case requiring reversibly adds ! to the frameStackList, as many
-    ### as likedActors linked to such  LiveActor.
+    ################################# Some Actor Naming Useful In the Semantics Definition
+
     define requiring_actor := 
         (LiveActor 
             actorIde 
@@ -65,37 +65,6 @@ module ByMove {
             flag
         )
 
-
-    assert* requiring_definition_base := 
-        (
-            (linkedActors0 = nil)
-            ==>
-            (
-                (requiring requiring_actor recursive_actor config)
-                =
-                (cg config (One (Actor required_actor))) 
-            )
-        )
-
-    assert* requiring_definition_recursive := 
-        (
-            (linkedActors0 = (actorIdeLink :: linkedActors1))
-            ==>
-            (
-                (requiring requiring_actor recursive_actor config)
-                =
-                (requiring requiring_actor recursive_actor_after config)
-            )
-        )
-
-    # TODO: the config (Null) in requiring is never used
-    assert* reduce_requiere := 
-        (
-            (cg config (One (Actor requiring_actor)))
-            ->>
-            (cg config (requiring requiring_actor requiring_actor Null))
-        )
-
     define owner_actor_received := 
         (LiveActor 
             actorIdeLink
@@ -114,13 +83,6 @@ module ByMove {
             mailbox
             linkedActors
             flag
-        )
-
-    assert* reduce_response_requiring :=
-        (
-            (cg config (One (Actor owner_actor_received)))
-            ->>
-            (cg config (One Actor surrendering_actor))
         )
 
     define owner_actor := 
@@ -155,6 +117,53 @@ module ByMove {
             flag
         )
 
+    ############################################### Semantics when an actor is requiring F
+    ### The semantics of pass by move (as anything in the actors) is given by defining such
+    ### behavior using the reduce relation (->>) and its transitive closure (->*).
+    ### In this case requiring recursively adds ! to the frameStackList, as many
+    ### as likedActors linked to such  LiveActor. Then, the actor system it self will take
+    ### care of sending such messages. 
+
+    assert* requiring_definition_base := 
+        (
+            (linkedActors0 = nil)
+            ==>
+            (
+                (requiring requiring_actor recursive_actor config)
+                =
+                (cg config (One (Actor required_actor))) 
+            )
+        )
+
+    assert* requiring_definition_recursive := 
+        (
+            (linkedActors0 = (actorIdeLink :: linkedActors1))
+            ==>
+            (
+                (requiring requiring_actor recursive_actor config)
+                =
+                (requiring requiring_actor recursive_actor_after config)
+            )
+        )
+
+    # TODO: the config (Null) in requiring is never used
+    assert* reduce_requiere := 
+        (
+            (cg config (One (Actor requiring_actor)))
+            ->>
+            (cg config (requiring requiring_actor requiring_actor Null))
+        )
+
+
+    assert* reduce_response_requiring :=
+        (
+            (cg config (One (Actor owner_actor_received)))
+            ->>
+            (cg config (One Actor surrendering_actor))
+        )
+
+    #################################################### Important Pass-by-Move Properties
+
     # If a node requires a Function it eventually could used
     define eventual_ownership :=
         ( 
@@ -162,19 +171,28 @@ module ByMove {
                  frameStackList1 expression expression0 mailbox mailbox0 linkedActors 
                  linkedActors0 .
            (cg config (cg (One (Actor owner_actor)) (One (Actor requiring_actor)) )) 
-           -*>
+           ->*
            (cg config (cg (One (Actor surrender_actor)) (One (Actor endowed_actor)) ))
         )
     
     # define test := (Null ->> Null)
 
-    # (!chain<-
-    #     [
-    #         Null
-    #         ->>
-    #         Null
-    #     ]
-    # )
+    (!chain<-
+        [
+            (
+                (cg config (cg (One (Actor owner_actor)) (One (Actor requiring_actor)) )) 
+                ->*
+                (cg config (cg (One (Actor surrender_actor)) (One (Actor endowed_actor)) ))
+            )
+            # <--
+            # (
+            #     (cg config (cg (One (Actor owner_actor)) (One (Actor requiring_actor)) )) 
+            #     ->*
+            #     (cg config (cg (One (Actor surrender_actor)) (One (Actor endowed_actor)) ))
+            # )
+            # true
+        ]
+    )
 
 
     # pick-any  config flag actorIde actorIdeFrom frameStackList frameStackList0

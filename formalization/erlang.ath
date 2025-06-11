@@ -73,12 +73,12 @@ module Actor{
 
     ###################################################################### Reduce Function
     # This function defines the arrow in the paper, it would be call reduce for future
-    # , references. -*> is the the irreflexive transitive closures of ->>.
+    # , references. ->* is the the irreflexive transitive closures of ->>.
     # TODO: This reduce function must be endowed with the Athena's transitive closure
     #       theory, this give automatically ->> all the properties instead of having
     #       to assert them.
 
-    declare ->>, -*> : [(Cfg ConfigElement) (Cfg ConfigElement)]   ->  Boolean
+    declare ->>, ->* : [(Cfg ConfigElement) (Cfg ConfigElement)]   ->  Boolean
     declare -n>:       [N (Cfg ConfigElement) (Cfg ConfigElement)] -> Boolean
 
     define [x y z y' m n] := 
@@ -99,27 +99,27 @@ module Actor{
             (-n> (S n) x y) <==> (exists z . (-n> n x z) & (z ->> y)))
 
     assert TC-definition := 
-        (forall x y . x -*> y <==> (exists n . (-n> (S n) x y)))
+        (forall x y . x ->* y <==> (exists n . (-n> (S n) x y)))
 
     assert -n>-sum :=
         (forall n m x y z . 
             (-n> m x y) & (-n> n y z) ==> (-n> (m + n) x z))
 
-    assert ->>-inclusion :=  (forall x y . x ->> y ==> x -*> y)
+    assert ->>-inclusion :=  (forall x y . x ->> y ==> x ->* y)
 
     assert TC-lemma := 
         (forall x y . 
-            x -*> y <==> 
-                x ->> y | (exists y' . x -*> y' & y' ->> y))
+            x ->* y <==> 
+                x ->> y | (exists y' . x ->* y' & y' ->> y))
 
     assert TC-Transitivity := 
-        (forall x y z . x -*> y & y -*> z  ==> x -*> z)
+        (forall x y z . x ->* y & y ->* z  ==> x ->* z)
 
     assert TC-Transitivity1 := 
-        (forall x y z . x -*> y & y ->> z ==> x -*> z)
+        (forall x y z . x ->* y & y ->> z ==> x ->* z)
 
     assert TC-Transitivity2 := 
-        (forall x y z . x ->> y & y ->> z  ==> x -*> z)
+        (forall x y z . x ->> y & y ->> z  ==> x ->* z)
 
     ############################################################## Process local semantics
     ###
