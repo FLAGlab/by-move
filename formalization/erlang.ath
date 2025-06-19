@@ -1,0 +1,162 @@
+load "list-of.ath"
+load "config.ath"
+module Actor{
+    open Cfg
+    open List
+
+    ##################################################################### Sort definitions 
+    domains Expression, Flag
+
+    declare ff, tt: Flag
+    declare NORMAL, KILL, EXIT, TRUE, OK : Expression 
+    
+    # TODO: FrameStack incomplete definition, just define the needed for Figure.3.Pag.13 
+    datatype FrameStack :=  
+          (bang' Expression) 
+        | (exit' Expression) 
+        | (frame' Expression)
+        | link' 
+        | unlink'
+    # TODO: The definition of signals is over values (Pag.4) here the definition is over
+    #       expressions, that is because the second field of an actor is an expression
+    #       but when defining Send (Pag.13) they are assuming that there is a value in 
+    #       such expression.
+    # TEMPORALLY THERE IS NOT GOING TO EXIT THE VALUE SORT EXPRESSION IS GOING TO 
+    # ENCAPSULATE ALL SUCH BEHAVIOR PROBABLY AT THIS MOMENT I DO NOT NEED SUCH GRANULARITY. 
+    datatype Signal :=   
+          (msg Expression)
+        | (exit Expression Flag)
+        | link
+        | unlink 
+    datatype Action :=  
+          (send Expression Expression Signal)
+        | (rec Expression)
+        | (self Expression)
+        | (arr Expression Expression Signal)
+        | (spawn Expression Expression Expression)
+        | sequential
+        | termination
+        | Flag
+    # TODO: To define link (Pag.13) I need to have Ide < Expression. As right now, I don't
+    #       how to achieve that. The temporally solution is to define, fixed process IDEs
+    #       and use them as expressions. 
+    # Stack, Expression, Mailbox, LinkedActors, Flag
+    datatype Actor := 
+          (LiveActor Expression (List FrameStack) Expression (List Expression) (List Expression) Flag)
+        | (TerminatedActor (List Expression))  
+
+
+    # THIS IS QUIET IMPORTANT! Notice how I achieve to define the datatype Actor || Action
+    # To do so I had to introduce two constructors: Actor/1 and Action/1. I mean it kinda
+    # makes sense but at the same time it does not.
+    datatype ConfigElement := 
+          (Actor Actor)
+        | (Action Action)
+
+    ################################################################ Variables definitions 
+    define [frameStackList expression expression0 mailbox linkedActors flag config 
+            actorIde actorIdeTo actorIdeFrom actorIdeLink]
+            :=
+            [
+                ?frameStackList:(List FrameStack) 
+                ?expression:    Expression
+                ?expression0:   Expression
+                ?mailbox:       (List Expression)
+                ?linkedActors:  (List Expression)
+                ?flag:          Flag
+                ?config:        (Cfg ConfigElement) 
+                ?actorIde:      Expression
+                ?actorIdeTo:    Expression
+                ?actorIdeFrom:  Expression
+                ?actorIdeLink:  Expression
+            ] 
+
+    ###################################################################### Reduce Function
+    # This function defines the arrow in the paper, it would be call reduce for future
+    # , references. ->* is the the irreflexive transitive closures of ->>.
+    # TODO: This reduce function must be endowed with the Athena's transitive closure
+    #       theory, this give automatically ->> all the properties instead of having
+    #       to assert them.
+
+    declare ->>, ->* : [(Cfg ConfigElement) (Cfg ConfigElement)]   ->  Boolean
+    declare -n>:       [N (Cfg ConfigElement) (Cfg ConfigElement)] -> Boolean
+
+    define [x y z y' m n] := 
+        [
+            ?x:(Cfg ConfigElement)
+            ?y:(Cfg ConfigElement)
+            ?z:(Cfg ConfigElement)
+            ?y':(Cfg ConfigElement)
+            ?m:N
+            ?n:N
+        ]
+
+    assert -n>-zero := 
+        (forall x y . (-n> zero x y) <==> x = y)
+
+    assert -n>-nonzero := 
+        (forall x n y .
+            (-n> (S n) x y) <==> (exists z . (-n> n x z) & (z ->> y)))
+
+    assert TC-definition := 
+        (forall x y . x ->* y <==> (exists n . (-n> (S n) x y)))
+
+    assert -n>-sum :=
+        (forall n m x y z . 
+            (-n> m x y) & (-n> n y z) ==> (-n> (m + n) x z))
+
+    assert ->>-inclusion :=  (forall x y . x ->> y ==> x ->* y)
+
+    assert TC-lemma := 
+        (forall x y . 
+            x ->* y <==> 
+                x ->> y | (exists y' . x ->* y' & y' ->> y))
+
+    assert TC-Transitivity := 
+        (forall x y z . x ->* y & y ->* z  ==> x ->* z)
+
+    assert TC-Transitivity1 := 
+        (forall x y z . x ->* y & y ->> z ==> x ->* z)
+
+    assert TC-Transitivity2 := 
+        (forall x y z . x ->> y & y ->> z  ==> x ->* z)
+
+    ############################################################## Process local semantics
+    ###
+    ############################################################## Just Some abbreviations
+    define msg_exp      := (msg expression0)
+    define bang         := (bang' actorIdeTo)
+    define arr_msg      := (Action (arr actorIdeFrom actorIdeTo msg_exp))
+    define send_msg     := (Action (send actorIdeFrom actorIdeTo msg_exp))
+    define to_actor     := (Actor (LiveActor actorIdeTo frameStackList expression mailbox linkedActors flag))
+    define actor        := (Actor (LiveActor actorIdeFrom frameStackList expression mailbox linkedActors flag))
+    define send_actor   := (Actor (LiveActor actorIdeFrom (bang :: frameStackList) expression0 mailbox linkedActors flag))
+    define arr_msg_actor:= (Actor (LiveActor actorIdeFrom frameStackList expression (mailbox ++ [expression0]) linkedActors flag))
+    ###################################################################################### 
+    # TODO: I make the decision of delete all the other rules that I have already write,
+    #       In this point just need the definition for send and arrive. This also help me
+    #       reduce the points of failures for this very first 'proof of concept', it is
+    #       clear that I have to fully define all the rules! (Future work)
+
+
+    assert* reduce_arr_msg := 
+        (
+            (cg config (cg (One to_actor) (One arr_msg)))
+            ->>
+            (cg config (One arr_msg_actor))
+        )
+    
+    assert* reduce_send := 
+        (
+            (cg config (One send_actor))
+            ->>
+            (cg
+                config
+                (cg
+                    (One actor)
+                    (One send_msg)
+                )
+            )
+        )
+
+}

@@ -1,0 +1,385 @@
+# Abstract configuration definition, as an abelian monoid
+
+load "group.ath"
+#-------------------------------------------------------------------------
+# Polymorphic configuration construction operator, cg
+
+structure (Cfg S) := Null | (One S) | (cg (Cfg S) (Cfg S))
+# We do not assert (structure-axioms "Cfg") since that would
+# include (exclusive-constructors "Cfg")), which would imply
+# Null cg (One a) =/= (One a).  
+
+(set-precedence One 120)
+
+module Cfg {
+ open Abelian-Monoid
+
+ define [a b c d s s1 s2 s3] := 
+    [?a:'S ?b:'S ?c:'S ?d:'S 
+     ?s:(Cfg 'S) ?s1:(Cfg 'S) ?s2:(Cfg 'S) ?s3:(Cfg 'S)]
+
+ declare in: (S) [S (Cfg S)] -> Boolean
+
+ module in {
+  define empty := (forall a . ~ a in Null)
+  define self := (forall a b . a in One b <==> a = b)
+  define nonempty := 
+    (forall a s1 s2 . a in (s1 cg s2) <==> a in s1 | a in s2)
+  define cancellation :=
+    (forall s1 s2 a . s1 cg One a = s2 cg One a ==> s1 = s2) 
+ } # close module in
+
+ define Theory :=
+  (make-theory
+    [[Abelian-Monoid.theory 'cg [+ cg  <0> Null]]]
+    [in.empty in.self in.nonempty in.cancellation])
+  
+ define Isolate1 :=     
+  (forall s a . a in s ==> exists s1 . s = s1 cg One a)
+
+ define Isolate2 :=
+  (forall s a .
+    (exists s1 . s = s1 cg One a) ==> a in s)
+
+ define Together :=
+  (forall s s1 s2 a b .
+    s = s1 cg One a &
+    s = s2 cg One b & 
+    a =/= b 
+    ==> exists s3 . s = s3 cg One a cg One b)
+
+ define Three-Together :=
+  (forall s s1 s2 a b c .
+    s = s1 cg One a &
+    s = s2 cg One b cg One c & 
+    a =/= b &
+    a =/= c
+    ==> exists s3 . s = s3 cg One a cg One b cg One c)
+
+ define Four-Together :=
+  (forall s s1 s2 a b c d .
+    s = s1 cg One a cg One b &
+    s = s2 cg One c cg One d & 
+    a =/= b & a =/= c & a =/= d &
+    b =/= c & b =/= d
+    ==> exists s3 . 
+          s = s3 cg One a cg One b cg One c cg One d)
+
+ define Locate :=
+   (forall s1 a s2 b .
+    s1 cg One a = s2 cg One b
+    ==> s1 = s2 & a = b | b in s1)
+
+ define theorems := [Isolate1 Isolate2 Together 
+		     Three-Together Four-Together Locate]
+
+ # The original 'given' definition don't have the 'define'
+ # yet notice that the sentence uses 'adapt' but it is not define    
+ # define given := lambda (P) (get-property P adapt Theory)
+
+ define proofs :=
+  method (theorem adapt)
+   # get-property does the same as prove-property 
+   # but prove-property is a method i.e. that tries
+   # to prove the resulting proposition.  
+   let {given := lambda (P) (get-property P adapt Theory);
+        lemma := method (P) (!prove-property P adapt Theory);  
+	chain := method (L) (!chain-help given L 'none);
+	chain-> := method (L) (!chain-help given L 'last);
+	cgA := (given ['cg associative]);
+	cgC := (given ['cg commutative]);
+	left-Null := (given ['cg left-identity])}
+   match theorem {
+     (val-of Isolate1) =>
+      by-induction (adapt theorem) {
+        Null =>
+        pick-any a
+         assume (a in Null)
+          (!from-complements
+     	   (exists ?s1 . Null = ?s1 cg One a)
+     	   (a in Null)
+     	   (!chain-> [true ==> (~ a in Null) [in.empty]]))
+     | (One b) =>
+       pick-any a
+        assume (a in One b)
+         let {B := (!chain->
+		    [(a in One b) ==> (a = b)   [in.self]])}
+         (!chain->
+	  [(One b)
+	   = (Null cg One b)         [left-Null]
+	   = (Null cg One a)         [B]
+	   ==> (exists ?s1 . One b = ?s1 cg One a)
+                                      [existence]])
+     | (s' cg s'') =>
+       let {ind-hyp1 := (forall ?a .
+			 ?a in s' ==> exists ?s1 . 
+				        s' = ?s1 cg One ?a);
+            ind-hyp2 := (forall ?a .
+                         ?a in s'' ==> exists ?s1 . 
+				         s'' = ?s1 cg One ?a)}
+        pick-any a
+         assume A := (a in (s' cg s''))
+	  let {B := (!chain->
+		     [A ==> (a in s' | a in s'') [in.nonempty]])}
+            (!cases B
+              assume (a in s')
+                let {B1 := 
+		      (!chain->
+		       [(a in s') 
+			==> (exists ?s1 . s' = ?s1 cg One a) 
+			[ind-hyp1]])}
+                pick-witness s1 for B1 B1-witnessed
+                  (!chain->
+		   [(s' cg s'')
+		    = ((s1 cg One a) cg s'') [B1-witnessed]
+		    = ((s1 cg s'') cg One a) [cgA cgC]
+		    ==> (exists ?s1 . s' cg s'' = ?s1 cg One a) 
+		    [existence]])
+              assume (a in s'')
+                let {B2 := 
+		      (!chain->
+		       [(a in s'') 
+			==> (exists ?s2 . s'' = ?s2 cg One a) 
+			                         [ind-hyp2]])}
+                pick-witness s2 for B2 B2-witnessed
+                  (!chain->
+		   [(s' cg s'')
+		    = (s' cg (s2 cg One a)) [B2-witnessed]
+		    = ((s' cg s2) cg One a) [cgA cgC]
+		    ==> (exists ?s1 . s' cg s'' = ?s1 cg One a) 
+		    [existence]]))
+     } # close by-induction
+   | (val-of Isolate2) =>
+     pick-any s a
+      assume A := (exists ?s1 . s = ?s1 cg One a)
+       pick-witness s1 for A A-witnessed
+        (!chain->
+	 [(a = a) 
+	  ==> (a in One a)           [in.self]
+	  ==> (a in s1 | a in One a) [alternate]
+	  ==> (a in (s1 cg One a))   [in.nonempty]
+	  ==> (a in s)               [A-witnessed]])
+   | (val-of Together) =>
+     pick-any s:(Cfg 'T) s1 s2 a b 
+      let {A1 := (s = s1 cg One a);
+           A2 := (s = s2 cg One b);
+           A3 := (a =/= b)}
+       assume (A1 & A2 & A3)
+        let {IS2 := (!lemma Isolate2);
+	     B :=
+	       (!chain->
+		[A1 ==> (exists ?s1 . s = ?s1 cg One a)  
+		                                [existence]
+		    ==> (a in s)                [IS2]
+		    ==> (a in (s2 cg One b))    [A2]
+		    ==> (a in s2 | a in One b)  [in.nonempty]]);
+	     goal := (exists ?s3 . 
+		       s = ?s3 cg One a cg One b)}
+          (!cases B
+            assume (a in s2)
+              let {IS1 := (!lemma Isolate1);
+                   C := 
+		     (!chain->
+		      [(a in s2) 
+		       ==> (exists ?s3 . s2 = ?s3 cg One a) 
+		       [IS1]])}
+                pick-witness s3 for C C-witnessed
+                  (!chain->
+		   [s = (s2 cg One b)             [A2]
+		      = ((s3 cg One a) cg One b)  [C-witnessed]
+		      = (s3 cg One a cg One b)    [cgA]
+		      ==> goal  [existence]])
+            assume D := (a in One b)
+              (!from-complements goal
+	       (!chain-> [D ==> (a = b)        [in.self]])
+	       A3))
+   | (val-of Three-Together) =>
+     pick-any s:(Cfg 'T) s1 s2 a b c
+      let {A1 := (s = s1 cg One a);
+           A2 := (s = s2 cg One b cg One c);
+           A3 := (a =/= b);
+           A4 := (a =/= c)}
+       assume (A1 & A2 & A3 & A4)
+        let {IS2 := (!lemma Isolate2);
+             B :=
+	       (!chain->
+		[A1 ==> (exists ?s1 . s = ?s1 cg One a) [existence]
+		    ==> (a in s)                        [IS2]
+		    ==> (a in (s2 cg One b cg One c))   [A2]
+		    ==> (a in s2 | a in (One b cg One c))  
+		                                  [in.nonempty]]);
+            goal := (exists ?s3 . 
+		      s = ?s3 cg One a cg One b cg One c)}
+          (!cases B
+            assume (a in s2)
+              let {IS1 := (!lemma Isolate1);
+                   C := 
+		     (!chain->
+		      [(a in s2) 
+		       ==> (exists ?s3 . s2 = ?s3 cg One a) [IS1]])}
+                pick-witness s3 for C C-witnessed
+                  (!chain->
+		   [s = (s2 cg One b cg One c)    [A2]
+		      = ((s3 cg One a) cg One b cg One c)  
+                                                  [C-witnessed]
+		      = (s3 cg One a cg One b cg One c) [cgA]
+		      ==> goal  [existence]])
+            assume D := (a in (One b cg One c))
+              let {E := (!chain-> 
+			 [D ==> (a in One b | a in One c) 
+			                         [in.nonempty]])}
+	        (!cases E
+                   assume E1 := (a in One b)
+                     (!from-complements goal 
+			(!chain-> [E1 ==> (a = b)  [in.self]])
+			A3)
+                   assume E2 := (a in One c)
+                     (!from-complements goal 
+			(!chain-> [E2 ==> (a = c)  [in.self]])
+			A4)))
+
+   | (val-of Four-Together) =>
+     pick-any s:(Cfg 'T) s1 s2 a b c d
+      let {A1 := (s = s1 cg One a cg One b);
+           A2 := (s = s2 cg One c cg One d);
+           A3 := (a =/= b);
+           A4 := (a =/= c);
+           A5 := (a =/= d);
+           A6 := (b =/= c);
+           A7 := (b =/= d)}
+      assume (A1 & A2 & A3 & A4 & A5 & A6 & A7)
+        let {IS2 := (!lemma Isolate2);
+             B := (!chain->
+		   [A1 ==> (s = (s1 cg One b) cg One a)  
+		                  [cgA cgC]
+		       ==> (exists ?s1 . s = ?s1 cg One a) 
+              		          [existence]
+		       ==> (a in s)  [IS2]
+		       ==> (a in (s2 cg One c cg One d)) [A2]
+		       ==> (a in s2 | a in (One c cg One d))  
+		                  [in.nonempty]]);
+            goal := (exists ?s4 . 
+		      s = ?s4 cg One a cg One b cg 
+		          One c cg One d)}
+         (!cases B
+          assume (a in s2)
+              let {IS1 := (!lemma Isolate1);
+                   C := 
+		     (!chain->
+		      [(a in s2) 
+		       ==> (exists ?s3 . s2 = ?s3 cg One a) 
+		                                   [IS1]])}
+                pick-witness s3 for C C-witnessed
+                  let {D1 := (!chain
+			      [s = (s2 cg One c cg One d) [A2]
+				 = ((s3 cg One a) cg One c cg One d)  
+				                  [C-witnessed]
+				 = (s3 cg One a cg One c cg One d) 
+				                  [cgA]]);
+                       D2 := (!chain->
+			      [A1 ==> (s = (s1 cg One a) cg One b) 
+				  [cgA]
+				  ==> (exists ?s4 . s = ?s4 cg One b) 
+				  [existence]
+				  ==> (b in s)    [IS2]
+				  ==> (b in (s3 cg One a cg 
+                                             One c cg One d)) [D1]
+				  ==> (b in s3 | 
+                                       b in (One a cg One c cg One d))
+				                  [in.nonempty]])}
+		  (!cases D2
+	           assume (b in s3)
+		     let {E := 
+			   (!chain->
+			    [(b in s3) 
+			     ==> (exists ?s4 . 
+                                   s3 = ?s4 cg One b)  [IS1]])}
+		     pick-witness s4 for E E-witnessed
+                       (!chain->
+			[D1 ==> (s = (s4 cg One b) cg One a cg 
+				     One c cg One d)
+			    [E-witnessed]
+			    ==> (s = s4 cg One a cg One b cg 
+				           One c cg One d) 
+			    [cgA cgC]
+			    ==> goal [existence]])
+                   assume G1 := (b in (One a cg One c cg One d))
+                     let {H1 := (!chain->
+				 [G1 ==> (b in One a | 
+                                          b in (One c cg One d))
+				                    [in.nonempty]])}
+                     (!cases H1 
+                      assume (b in One a)
+                        (!from-complements goal
+			 (!chain-> 
+			  [(b in One a) ==> (b = a) [in.self]
+                                        ==> (a = b) [sym]])
+			 A3)
+		      assume J1 := (b in (One c cg One d))
+		        let {K1 := (!chain->
+				    [J1 ==> (b in One c | b in One d)
+					      [in.nonempty]])}
+			(!cases K1
+                         assume (b in One c)
+                           (!from-complements goal
+			    (!chain-> 
+			     [(b in One c) ==> (b = c)  [in.self]])
+			    A6)
+                         assume (b in One d)
+			   (!from-complements goal
+			    (!chain-> 
+			     [(b in One d) ==> (b = d)  [in.self]])
+			    A7))))
+          assume L1 := (a in (One c cg One d))
+            let {M1 := (!chain->
+			[L1 ==> (a in One c | a in One d)  
+			                      [in.nonempty]])}
+            (!cases M1
+             assume (a in One c)
+               (!from-complements goal
+                (!chain-> [(a in One c) ==> (a = c) [in.self]])
+		A4)
+             assume (a in One d)
+               (!from-complements goal
+                (!chain-> [(a in One d) ==> (a = d) [in.self]])
+		A5)))
+   | (val-of Locate) =>
+     let {_ := (!lemma Isolate1);
+	  _ := (!lemma Isolate2);
+	  _ := (!lemma Together)}
+     pick-any s1 a s2 b
+       assume A := (s1 cg One a = s2 cg One b)
+         let {goal := (s1 = s2 & a = b | b in s1)}
+         (!two-cases
+	  assume (a = b)
+	    (!chain->
+	     [A ==> (s1 cg One a = s2 cg One a)  [(a = b)]
+		==> (s1 = s2)                    [in.cancellation]
+		==> (s1 = s2 & a = b)            [augment]
+		==> (s1 = s2 & a = b | b in s1)  [alternate]])
+          assume (a =/= b)
+            let {B1 := (!chain->
+			[(s1 cg One a = s1 cg One a)
+			 ==> (s1 cg One a = s1 cg One a & A & a =/= b) [augment]
+			 ==> (exists ?s3 . s1 cg One a = ?s3 cg One a cg One b)
+			                             [Together]])}
+            pick-witness s3 for B1 B1-w
+              let {C1 := 
+                    (!chain->
+		     [B1-w ==> (s1 cg One a = (s3 cg One a) cg One b)    [cgA]
+			   ==> (exists ?s4 . s1 cg One a = ?s4 cg One b) [existence]
+			   ==> (b in (s1 cg One a))                 [Isolate2]
+			   ==> (b in s1 | b in One a)               [in.nonempty]])}
+            (!cases C1
+	     (!chain
+	      [(b in s1) ==> goal  [alternate]])
+             assume (b in One a)
+	       (!from-complements goal 
+		(!chain->
+		 [(b in One a) ==> (b = a)  [in.self] ==> (a = b) [sym]])
+		(a =/= b))))
+   } # close match theorem
+
+ (add-theorems Theory |{theorems := proofs}|)
+} # close module Cfg
+
