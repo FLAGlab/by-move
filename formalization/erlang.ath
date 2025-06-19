@@ -12,7 +12,7 @@ module Actor{
     
     # TODO: FrameStack incomplete definition, just define the needed for Figure.3.Pag.13 
     datatype FrameStack :=  
-            (bang' Expression) 
+          (bang' Expression) 
         | (exit' Expression) 
         | (frame' Expression)
         | link' 

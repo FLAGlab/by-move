@@ -175,24 +175,31 @@ module ByMove {
            (cg config (cg (One (Actor surrender_actor)) (One (Actor endowed_actor)) ))
         )
     
-    # define test := (Null ->> Null)
+    # # define test := (Null ->> Null)
 
-    (!chain<-
-        [
-            (
-                (cg config (cg (One (Actor owner_actor)) (One (Actor requiring_actor)) )) 
-                ->*
-                (cg config (cg (One (Actor surrender_actor)) (One (Actor endowed_actor)) ))
-            )
-            # <--
-            # (
-            #     (cg config (cg (One (Actor owner_actor)) (One (Actor requiring_actor)) )) 
-            #     ->*
-            #     (cg config (cg (One (Actor surrender_actor)) (One (Actor endowed_actor)) ))
-            # )
-            # true
-        ]
-    )
+    # ( -->(a ++ b) ==> ( (--> a )++ b)  )
+    # ( -->(a ++ b) ==> ( a ++ (--> b))  )
+
+    # - Transitividad
+    # - a -> b ^ b -> a
+
+    # (!chain->>
+    #     [
+    #         (
+    #             (cg config (cg (One (Actor owner_actor)) (One (Actor requiring_actor)) )) 
+    #             ->>
+    #             (cg config (cg (One (Actor owner_actor)) (requiring requiring_actor requiring_actor Null) ))
+    #             ->>
+    #         )
+    #         <==
+    #         # (
+    #         #     (cg config (cg (One (Actor owner_actor)) (One (Actor requiring_actor)) )) 
+    #         #     ->*
+    #         #     (cg config (cg (One (Actor surrender_actor)) (One (Actor endowed_actor)) ))
+    #         # )
+    #         true [reduce_requiere]
+    #     ]
+    # )
 
 
     # pick-any  config flag actorIde actorIdeFrom frameStackList frameStackList0
